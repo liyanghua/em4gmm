@@ -23,31 +23,32 @@ GNU General Public License for more details. */
 		#define M_PI 3.14159265358979323846
 	#endif
 
-	typedef double decimal;
-	typedef int number;
+	typedef double decimal; /* Specifies the default decimal type. */
+	typedef int number;     /* Specifies the default integer type. */
 
 	typedef struct{
-		decimal **data;
-		number samples;
-		number dimension;
+		decimal **data;   /* A matrix of samples*dimension elements.  */
+		number samples;   /* Number of samples on the overall data.   */
+		number dimension; /* Number of dimensions of the data loaded. */
 	}data;
 
 	typedef struct{
-		decimal prior;
-		decimal cgauss; /* Cache para acelerar el clasificador. */
-		decimal *mean;
-		decimal *dcov; /* Para el reconocimiento son las inversas. */
-		decimal *_mean; /* Cuentas del parametro futuro (usado por el EM). */
-		decimal *_dcov; /* Cuentas del parametro futuro (usado por el EM). */
+		decimal prior;  /* Prior probability of this component of the mixture.   */
+		decimal cgauss; /* Cache storage in order to make faster the classifier. */
+		decimal *mean;  /* Means vector of gaussian multivariate distribution.   */
+		decimal *dcov;  /* Diagonal covariances, when classify are the inverses. */
+		decimal *_mean; /* Counts to estimate the future parameter (used by EM). */
+		decimal *_dcov; /* Counts to estimate the future parameter (used by EM). */
 	}gauss;
 
 	typedef struct{
-		gauss *mix;
-		number dimension;
-		number num;
-		decimal *mcov; /* Covarianzas minimas para evitar singularidades. */
+		gauss *mix;       /* Vector of gaussian distributions (above struct).    */ 
+		number dimension; /* Number of dimensions of the gaussian mixture model. */
+		number num;       /* Number of components of the gaussian mixture model. */
+		decimal *mcov;    /* Minimum allowed covariances to avoid singularities. */
 	}gmm;
 
+	/* Public function prototypes to work with Gaussian Mixture Models. */
 	void gmm_save(char*,gmm*);
 	gmm *gmm_load(char*);
 	gmm *gmm_initialize(data*,number);
