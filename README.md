@@ -28,7 +28,8 @@ On the header, the first number are the dimension and the second the number of s
 Compiling
 ---------
 
-On Mac Os X and Linux distributions you can simple use the make command. On Windows you can import the files to (for instance) a Dev-Cpp project and compile from it.
+On Mac Os X and Linux distributions you can simple use the make command on the shell.
+On Windows you can import all to a Dev-Cpp project (for instance) and compile from it.
 
 Usage
 -----
@@ -48,10 +49,20 @@ Also, yo can obtain the score/log-probability of one feature test file:
            model: model used to classify the features
            world: optional world model to uniform data
 
+The standard process is to train a model for each class, and then classify at the class with highest probability.
+
 License
 -------
      Expectation Maximization for Gaussian Mixture Models.
      Copyright (C) 2012-2013 Juan Daniel Valor Miro
-     This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
-     This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+     
+     This program is free software; you can redistribute it and/or
+     modify it under the terms of the GNU General Public License as
+     published by the Free Software Foundation; either version 2 of
+     the License, or (at your option) any later version.
+     
+     This program is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+     General Public License for more details.
 
