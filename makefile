@@ -15,20 +15,23 @@ CFLAGS := -O3
 CC := gcc
 BINDIR := /usr/bin
 
+SRC := src
+BIN := bin
+
 all:
-	$(CC) $(CFLAGS) gmm.c class.c -o gmmclass -lm
-	$(CC) $(CFLAGS) gmm.c train.c -o gmmtrain -lm
-	strip gmmclass
-	strip gmmtrain
-	chmod +x gmmclass
-	chmod +x gmmtrain
+	$(CC) $(CFLAGS) $(SRC)/gmm.c $(SRC)/class.c -o $(BIN)/gmmclass -lm
+	$(CC) $(CFLAGS) $(SRC)/gmm.c $(SRC)/train.c -o $(BIN)/gmmtrain -lm
+	strip $(BIN)/gmmclass
+	strip $(BIN)/gmmtrain
+	chmod +x $(BIN)/gmmclass
+	chmod +x $(BIN)/gmmtrain
 
 install:
-	cp -f gmmclass $(BINDIR)/gmmclass
-	cp -f gmmtrain $(BINDIR)/gmmtrain
+	cp -f $(BIN)/gmmclass $(BINDIR)/gmmclass
+	cp -f $(BIN)/gmmtrain $(BINDIR)/gmmtrain
 	chmod +x $(BINDIR)/gmmclass
 	chmod +x $(BINDIR)/gmmtrain
 
 clean:
-	rm -f gmmtrain
-	rm -f gmmclass
+	rm -f $(BIN)/gmmtrain
+	rm -f $(BIN)/gmmclass
