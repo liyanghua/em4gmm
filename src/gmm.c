@@ -13,16 +13,15 @@ GNU General Public License for more details. */
 
 #include "gmm.h"
 
-/* Clasificador de mixturas eficiente que usa una aproximacion a la Viterbi. */
+/* Efficient Gaussian Mixture classifier using a Viterbi aproximation. */
 decimal gmm_classify(data *feas,gmm *gmix){
 	decimal x,maximum,prob,s=0;
 	number i,m,j;
 	for(i=0;i<feas->samples;i++){
 		maximum=-HUGE_VAL;
 		for(m=0;m<gmix->num;m++){
-			prob=gmix->mix[m].cgauss; /* La parte invariante se calcula previamente. */
+			prob=gmix->mix[m].cgauss; /* The non-data dependant part was precalculated. */
 			for(j=0;j<gmix->dimension;j++){
-				if(maximum>prob)break; /* Poda para acelerar el clasificador. */
 				x=feas->data[i][j]-gmix->mix[m].mean[j];
 				prob-=(x*x)*gmix->mix[m].dcov[j];
 			}
@@ -33,7 +32,7 @@ decimal gmm_classify(data *feas,gmm *gmix){
 	return (s*0.5)/feas->samples;
 }
 
-/* Inicializamos el clasificador calculando la parte invariante a los datos. */
+/* Initialize the classifier by calculating the non-data dependant part. */
 decimal gmm_init_classifier(gmm *gmix){
 	decimal cache=gmix->dimension*(-0.5)*log(2*M_PI);
 	number m,j;
@@ -42,19 +41,19 @@ decimal gmm_init_classifier(gmm *gmix){
 		for(j=0;j<gmix->dimension;j++){
 			gmix->mix[m].cgauss+=log(gmix->mix[m].dcov[j]);
 			gmix->mix[m].dcov[j]=1/gmix->mix[m].dcov[j];
-			gmix->mix[m]._mean[j]=gmix->mix[m]._dcov[j]=0; /* A 0 las cuentas del EM. */
+			gmix->mix[m]._mean[j]=gmix->mix[m]._dcov[j]=0; /* Caches to 0. */
 		}
 		gmix->mix[m].cgauss=2*(gmix->mix[m].prior-((gmix->mix[m].cgauss*0.5)+cache));
 	}
 }
 
-/* Realiza una iteracion del algoritmo EM con los datos y la mixtura indicados. */
+/* Perform one iteration of the EM algorithm with the data and the mixture indicated. */
 decimal gmm_EMtrain(data *feas,gmm *gmix){
 	decimal *prob=(decimal*)calloc(gmix->num<<1,sizeof(decimal));
 	decimal tz,mean,llh=0,*z=prob+gmix->num,x,maximum;
 	number i,m,j;
-	/* Calculamos el valor esperado y acumulamos las cuentas (Paso E). */
-	gmm_init_classifier(gmix); /* El primer paso del EM es clasificar. */
+	/* Calculate expected value and accumulate the counts (E Step). */
+	gmm_init_classifier(gmix);
 	for(i=0;i<feas->samples;i++){
 		maximum=-HUGE_VAL;
 		for(m=0;m<gmix->num;m++){
@@ -66,24 +65,24 @@ decimal gmm_EMtrain(data *feas,gmm *gmix){
 			prob[m]*=0.5;
 			maximum=maximum>prob[m]?maximum:prob[m];
 		}
-		for(m=0,x=0;m<gmix->num;m++) /* No clasificamos a la Viterbi. */
+		for(m=0,x=0;m<gmix->num;m++) /* Do not use Viterbi aproximation. */
 			x+=exp(prob[m]-maximum);
 		llh+=(mean=maximum+log(x));
 		for(m=0;m<gmix->num;m++){
 			z[m]+=(tz=exp(prob[m]-mean));
-			for(j=0;j<feas->dimension;j++){ /* Acumulamos las cuentas. */
+			for(j=0;j<feas->dimension;j++){ /* Accumulate counts. */
 				gmix->mix[m]._mean[j]+=(x=tz*feas->data[i][j]);
 				gmix->mix[m]._dcov[j]+=x*feas->data[i][j];
 			}
 		}
 	}
-	/* Estimamos los nuevos parametros de la distribucion gausiana (Paso M). */
+	/* Estimate the new parameters of the Gaussian Mixture (M Step). */
 	for(m=0;m<gmix->num;m++){
 		gmix->mix[m].prior=log(z[m]/feas->samples);
 		for(j=0;j<feas->dimension;j++){
 			gmix->mix[m].mean[j]=(x=gmix->mix[m]._mean[j]/z[m]);
 			gmix->mix[m].dcov[j]=(gmix->mix[m]._dcov[j]/z[m])-(x*x);
-			if(gmix->mix[m].dcov[j]<gmix->mcov[j]) /* Suavizado de covarianzas. */
+			if(gmix->mix[m].dcov[j]<gmix->mcov[j]) /* Smoothing covariances. */
 				gmix->mix[m].dcov[j]=gmix->mcov[j];
 		}
 	}
@@ -91,7 +90,7 @@ decimal gmm_EMtrain(data *feas,gmm *gmix){
 	return llh/feas->samples;
 }
 
-/* Creamos una mixtura reservando memoria de forma contigua. */
+/* Allocate contiguous memory to create a new Gaussian Mixture. */
 inline gmm *gmm_create(number n,number d){
 	gmm *gmix=(gmm*)calloc(1,sizeof(gmm));
 	gmix->dimension=d;
@@ -106,12 +105,12 @@ inline gmm *gmm_create(number n,number d){
 	return gmix;
 }
 
-/* Creamos e inicializamos la mixtura con máxima verosimilitud y perturbando medias. */
+/* Create and initialize the Mixture with maximum likelihood and disturb the means. */
 gmm *gmm_initialize(data *feas,number nmix){
 	gmm *gmix=gmm_create(nmix,feas->dimension);
 	decimal x=1.0/gmix->num,y;
 	number i,j,b=feas->samples/gmix->num,bc=0,k;
-	/* Inicializacion de la primera mixtura con maxima verosimilitud. */
+	/* Initialize the first Gaussian with maximum likelihood. */
 	gmix->mix[0].prior=log(x);
 	for(j=0;j<feas->dimension;j++){
 		for(i=0;i<feas->samples;i++){
@@ -123,20 +122,21 @@ gmm *gmm_initialize(data *feas,number nmix){
 			-(gmix->mix[0].mean[j]*gmix->mix[0].mean[j]));
 		gmix->mcov[j]=0.001*gmix->mix[0].dcov[j];
 	}
-	/* Perturbamos todas las medias con las medias de C bloques de muestras. */
+	/* Disturb all the means creating C blocks of samples. */
 	for(i=gmix->num-1;i>=0;i--,bc+=b){
 		gmix->mix[i].prior=gmix->mix[0].prior;
+		for(j=bc,x=0;j<bc+b;j++)
+			for(k=0;k<feas->dimension;k++)
+				gmix->mix[i]._mean[k]+=feas->data[j][k];
 		for(k=0;k<feas->dimension;k++){
-			for(j=bc,x=0;j<bc+b;j++)
-				x+=feas->data[j][k];
-			gmix->mix[i].mean[k]=(gmix->mix[0].mean[k]*0.9)+(0.1*x/b);
+			gmix->mix[i].mean[k]=(gmix->mix[0].mean[k]*0.9)+(0.1*gmix->mix[i]._mean[k]/b);
 			gmix->mix[i].dcov[k]=gmix->mix[0].dcov[k];
 		}
 	}
 	return gmix;
 }
 
-/* Creamos y cargamos la mixtura del fichero recibido como parámetro. */
+/* Load the Gaussian Mixture from the file received as parameter. */
 gmm *gmm_load(char *filename){
 	number m,d;
 	FILE *f=fopen(filename,"rb");
@@ -154,7 +154,7 @@ gmm *gmm_load(char *filename){
 	return gmix;
 }
 
-/* Guardamos toda la mixtura en el fichero que se nos indica. */
+/* Save the Gaussian Mixture to the file received as parameter. */
 void gmm_save(char *filename,gmm *gmix){
 	number m;
 	FILE *f=fopen(filename,"wb");
@@ -170,7 +170,7 @@ void gmm_save(char *filename,gmm *gmix){
 	fclose(f);
 }
 
-/* Liberamos la memoria reservada al crear la mixtura. */
+/* Free the allocated memory of the Gaussian Mixture. */
 void gmm_delete(gmm *gmix){
 	number i;
 	for(i=0;i<gmix->num;i++)
@@ -179,7 +179,7 @@ void gmm_delete(gmm *gmix){
 	free(gmix);
 }
 
-/* Creamos y cargamos las muestras de un fichero de texto con formato. */
+/* Load the samples from a plain text file with the specified format. */
 data *feas_load(char *filename){
 	data *feas=(data*)calloc(1,sizeof(data));
 	number i,j;
@@ -203,7 +203,7 @@ data *feas_load(char *filename){
 	return feas;
 }
 
-/* Liberamos la memoria reservada al crear las muestras. */
+/* Free the allocated memory of the samples. */
 void feas_delete(data *feas){
 	free(feas->data[0]);
 	free(feas->data);
