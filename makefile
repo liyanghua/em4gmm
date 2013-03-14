@@ -20,10 +20,15 @@ all:
 	$(CC) $(CFLAGS) gmm.c train.c -o gmmtrain -lm
 	strip gmmclass
 	strip gmmtrain
+	chmod +x gmmclass
+	chmod +x gmmtrain
 
 install:
 	cp -f gmmclass $(BINDIR)/gmmclass
 	cp -f gmmtrain $(BINDIR)/gmmtrain
+	chmod +x $(BINDIR)/gmmclass
+	chmod +x $(BINDIR)/gmmtrain
 
 clean:
-	rm -f gmmtrain gmmclass
+	rm -f gmmtrain
+	rm -f gmmclass
