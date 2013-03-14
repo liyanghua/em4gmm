@@ -15,13 +15,13 @@ GNU General Public License for more details. */
 
 int main(int argc,char *argv[]){
 	if(argc==3|argc==4){
-		data *feas=feas_load(argv[1]);
-		gmm *gmix=gmm_load(argv[2]);
-		decimal result=gmm_classify(feas,gmix);
+		data *feas=feas_load(argv[1]); /* Load the data from the file.   */
+		gmm *gmix=gmm_load(argv[2]);   /* Load the model form the file.  */
+		decimal result=gmm_classify(feas,gmix); /* Compute probability.  */
 		gmm_delete(gmix);
-		if(argc==4){ /* Si hay un modelo del mundo obtenemos su probabilidad. */
-			gmix=gmm_load(argv[3]);
-			result-=gmm_classify(feas,gmix);
+		if(argc==4){ /* Only applies if there are a world model defined. */
+			gmix=gmm_load(argv[3]); /* Load world model form file.   */
+			result-=gmm_classify(feas,gmix); /* Obtain final score.  */
 			gmm_delete(gmix);
 			fprintf(stdout,"Score: %.10f\n",result);
 		}else fprintf(stdout,"LogProbability: %.10f\n",result);
