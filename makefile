@@ -17,10 +17,11 @@ BINDIR := /usr/bin
 
 SRC := src
 BIN := bin
+ALL := $(SRC)/data.c $(SRC)/gmm.c
 
 all:
-	$(CC) $(CFLAGS) $(SRC)/gmm.c $(SRC)/class.c -o $(BIN)/gmmclass -lm
-	$(CC) $(CFLAGS) $(SRC)/gmm.c $(SRC)/train.c -o $(BIN)/gmmtrain -lm
+	$(CC) $(CFLAGS) $(ALL) $(SRC)/class.c -o $(BIN)/gmmclass -lm
+	$(CC) $(CFLAGS) $(ALL) $(SRC)/train.c -o $(BIN)/gmmtrain -lm
 	strip $(BIN)/gmmclass
 	strip $(BIN)/gmmtrain
 	chmod +x $(BIN)/gmmclass
