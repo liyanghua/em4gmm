@@ -72,7 +72,7 @@ decimal gmm_EMtrain(data *feas,gmm *gmix){
 		llh+=(mean=maximum+log(x));
 		for(m=0;m<gmix->num;m++){
 			z[m]+=(tz=exp(prob[m]-mean));
-			for(j=0;j<feas->dimension;j++){ /* Accumulate counts. */
+			for(j=0;j<gmix->dimension;j++){ /* Accumulate counts. */
 				gmix->mix[m]._mean[j]+=(x=tz*feas->data[i][j]);
 				gmix->mix[m]._dcov[j]+=x*feas->data[i][j];
 			}
@@ -81,7 +81,7 @@ decimal gmm_EMtrain(data *feas,gmm *gmix){
 	/* Estimate the new parameters of the Gaussian Mixture (M Step). */
 	for(m=0;m<gmix->num;m++){
 		gmix->mix[m].prior=log(z[m]/feas->samples);
-		for(j=0;j<feas->dimension;j++){
+		for(j=0;j<gmix->dimension;j++){
 			gmix->mix[m].mean[j]=(x=gmix->mix[m]._mean[j]/z[m]);
 			gmix->mix[m].dcov[j]=(gmix->mix[m]._dcov[j]/z[m])-(x*x);
 			if(gmix->mix[m].dcov[j]<gmix->mcov[j]) /* Smoothing covariances. */
@@ -114,24 +114,18 @@ gmm *gmm_initialize(data *feas,number nmix){
 	number i,j,b=feas->samples/gmix->num,bc=0,k;
 	/* Initialize the first Gaussian with maximum likelihood. */
 	gmix->mix[0].prior=log(x);
-	for(j=0;j<feas->dimension;j++){
-		for(i=0;i<feas->samples;i++){
-			gmix->mix[0].mean[j]+=feas->data[i][j];
-			gmix->mix[0].dcov[j]+=feas->data[i][j]*feas->data[i][j];
-		}
-		gmix->mix[0].mean[j]/=feas->samples;
-		gmix->mix[0].dcov[j]=x*((gmix->mix[0].dcov[j]/feas->samples)
-			-(gmix->mix[0].mean[j]*gmix->mix[0].mean[j]));
+	for(j=0;j<gmix->dimension;j++){
+		gmix->mix[0].dcov[j]=x*feas->variance[j];
 		gmix->mcov[j]=0.001*gmix->mix[0].dcov[j];
 	}
 	/* Disturb all the means creating C blocks of samples. */
 	for(i=gmix->num-1;i>=0;i--,bc+=b){
 		gmix->mix[i].prior=gmix->mix[0].prior;
 		for(j=bc,x=0;j<bc+b;j++)
-			for(k=0;k<feas->dimension;k++)
+			for(k=0;k<gmix->dimension;k++)
 				gmix->mix[i]._mean[k]+=feas->data[j][k];
-		for(k=0;k<feas->dimension;k++){
-			gmix->mix[i].mean[k]=(gmix->mix[0].mean[k]*0.9)+(0.1*gmix->mix[i]._mean[k]/b);
+		for(k=0;k<gmix->dimension;k++){
+			gmix->mix[i].mean[k]=(feas->mean[k]*0.9)+(0.1*gmix->mix[i]._mean[k]/b);
 			gmix->mix[i].dcov[k]=gmix->mix[0].dcov[k];
 		}
 	}

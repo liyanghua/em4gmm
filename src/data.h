@@ -15,9 +15,11 @@ GNU General Public License for more details. */
 #define _data_h
 
 	typedef struct{
-		decimal **data;   /* A matrix of samples*dimension elements.  */
-		number samples;   /* Number of samples on the overall data.   */
-		number dimension; /* Number of dimensions of the data loaded. */
+		decimal **data;    /* A matrix of samples*dimension elements.  */
+		number samples;    /* Number of samples on the overall data.   */
+		number dimension;  /* Number of dimensions of the data loaded. */
+		decimal *mean;     /* The full mean of all the data samples.   */
+		decimal *variance; /* Variance (no square root) of samples.    */
 	}data;
 
 	/* Public functions prototypes to work with the samples. */

@@ -18,7 +18,7 @@ GNU General Public License for more details. */
 data *feas_load(char *filename){
 	data *feas=(data*)calloc(1,sizeof(data));
 	number i,j;
-	char header[9];
+	char header[9]; /* Read the header and alloc all the memory needed. */
 	FILE *f=fopen(filename,"r");
 	if(!f) fprintf(stderr,"Error: Not %s feature file found.\n",filename),exit(1);
 	fscanf(f,"%s",header);
@@ -26,13 +26,22 @@ data *feas_load(char *filename){
 		fprintf(stderr,"Error: Wrong %s feature file format.\n",filename),exit(1);
 	fscanf(f,"%i",&feas->dimension);
 	fscanf(f,"%i",&feas->samples);
-	feas->data=(decimal**)malloc(feas->samples*sizeof(decimal*));
-	decimal *aux=(decimal*)malloc(feas->dimension*feas->samples*sizeof(decimal));
-	for(i=0;i<feas->samples;i++){
+	feas->mean=(decimal*)calloc(2*feas->dimension,sizeof(decimal*));
+	feas->variance=feas->mean+feas->dimension;
+	feas->data=(decimal**)calloc(feas->samples,sizeof(decimal*));
+	decimal *aux=(decimal*)calloc(feas->dimension*(feas->samples+2),sizeof(decimal));
+	for(i=0;i<feas->samples;i++){ /* Read all the samples and store the counts. */
 		feas->data[i]=aux;
 		aux+=feas->dimension;
-		for(j=0;j<feas->dimension;j++)
+		for(j=0;j<feas->dimension;j++){
 			fscanf(f,"%lf",&feas->data[i][j]);
+			feas->mean[j]+=feas->data[i][j];
+			feas->variance[j]+=feas->data[i][j]*feas->data[i][j];
+		}
+	}
+	for(j=0;j<feas->dimension;j++){ /* Compute the mean and variance of the data. */
+		feas->mean[j]/=feas->samples;
+		feas->variance[j]=(feas->variance[j]/feas->samples)-(feas->mean[j]*feas->mean[j]);
 	}
 	fclose(f);
 	return feas;
@@ -42,5 +51,6 @@ data *feas_load(char *filename){
 void feas_delete(data *feas){
 	free(feas->data[0]);
 	free(feas->data);
+	free(feas->mean);
 	free(feas);
 }
