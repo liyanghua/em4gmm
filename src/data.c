@@ -24,8 +24,7 @@ data *feas_load(char *filename){
 	fscanf(f,"%s",header);
 	if(strcmp(header,"AKREALTF")!=0)
 		fprintf(stderr,"Error: Wrong %s feature file format.\n",filename),exit(1);
-	fscanf(f,"%i",&feas->dimension);
-	fscanf(f,"%i",&feas->samples);
+	fscanf(f,"%i %i",&feas->dimension,&feas->samples);
 	feas->mean=(decimal*)calloc(2*feas->dimension,sizeof(decimal*));
 	feas->variance=feas->mean+feas->dimension;
 	feas->data=(decimal**)calloc(feas->samples,sizeof(decimal*));

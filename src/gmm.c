@@ -29,7 +29,7 @@ decimal gmm_classify(data *feas,gmm *gmix){
 			}
 			if(maximum<prob)maximum=prob;
 		}
-		s+=maximum;
+		s+=maximum; /* Fast classifier using Viterbi aproximation. */
 	}
 	return (s*0.5)/feas->samples;
 }
@@ -58,7 +58,7 @@ decimal gmm_EMtrain(data *feas,gmm *gmix){
 	gmm_init_classifier(gmix);
 	for(i=0;i<feas->samples;i++){
 		maximum=-HUGE_VAL;
-		for(m=0;m<gmix->num;m++){
+		for(m=0;m<gmix->num;m++){ /* Compute expected class value of the sample. */
 			prob[m]=gmix->mix[m].cgauss;
 			for(j=0;j<gmix->dimension;j++){
 				x=feas->data[i][j]-gmix->mix[m].mean[j];
@@ -70,9 +70,9 @@ decimal gmm_EMtrain(data *feas,gmm *gmix){
 		for(m=0,x=0;m<gmix->num;m++) /* Do not use Viterbi aproximation. */
 			x+=exp(prob[m]-maximum);
 		llh+=(mean=maximum+log(x));
-		for(m=0;m<gmix->num;m++){
+		for(m=0;m<gmix->num;m++){ /* Accumulate counts of the sample in each Gaussian. */
 			z[m]+=(tz=exp(prob[m]-mean));
-			for(j=0;j<gmix->dimension;j++){ /* Accumulate counts. */
+			for(j=0;j<gmix->dimension;j++){
 				gmix->mix[m]._mean[j]+=(x=tz*feas->data[i][j]);
 				gmix->mix[m]._dcov[j]+=x*feas->data[i][j];
 			}
@@ -95,8 +95,7 @@ decimal gmm_EMtrain(data *feas,gmm *gmix){
 /* Allocate contiguous memory to create a new Gaussian Mixture. */
 inline gmm *gmm_create(number n,number d){
 	gmm *gmix=(gmm*)calloc(1,sizeof(gmm));
-	gmix->dimension=d;
-	gmix->mcov=(decimal*)calloc(gmix->dimension,sizeof(decimal));
+	gmix->mcov=(decimal*)calloc(gmix->dimension=d,sizeof(decimal));
 	gmix->mix=(gauss*)calloc(gmix->num=n,sizeof(gauss));
 	for(n=0;n<gmix->num;n++){
 		gmix->mix[n].mean=(decimal*)calloc(gmix->dimension*4,sizeof(decimal));
@@ -110,8 +109,8 @@ inline gmm *gmm_create(number n,number d){
 /* Create and initialize the Mixture with maximum likelihood and disturb the means. */
 gmm *gmm_initialize(data *feas,number nmix){
 	gmm *gmix=gmm_create(nmix,feas->dimension);
-	decimal x=1.0/gmix->num,y;
-	number i,j,b=feas->samples/gmix->num,bc=0,k;
+	number i,j,k,b=feas->samples/gmix->num,bc=0;
+	decimal x=1.0/gmix->num;
 	/* Initialize the first Gaussian with maximum likelihood. */
 	gmix->mix[0].prior=log(x);
 	for(j=0;j<gmix->dimension;j++){
@@ -121,10 +120,10 @@ gmm *gmm_initialize(data *feas,number nmix){
 	/* Disturb all the means creating C blocks of samples. */
 	for(i=gmix->num-1;i>=0;i--,bc+=b){
 		gmix->mix[i].prior=gmix->mix[0].prior;
-		for(j=bc,x=0;j<bc+b;j++)
+		for(j=bc,x=0;j<bc+b;j++) /* Compute the mean of a group of samples. */
 			for(k=0;k<gmix->dimension;k++)
 				gmix->mix[i]._mean[k]+=feas->data[j][k];
-		for(k=0;k<gmix->dimension;k++){
+		for(k=0;k<gmix->dimension;k++){ /* Disturbe the sample mean for each mixture. */
 			gmix->mix[i].mean[k]=(feas->mean[k]*0.9)+(0.1*gmix->mix[i]._mean[k]/b);
 			gmix->mix[i].dcov[k]=gmix->mix[0].dcov[k];
 		}
