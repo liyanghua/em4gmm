@@ -1,7 +1,13 @@
 em4gmm
 ======
 
-Fast and clean C implementation of the Expectation Maximization (EM) algorithm for estimating Gaussian Mixture Models (GMMs).
+Fast C implementation of the clustering Expectation Maximization (EM) algorithm for estimating Gaussian Mixture Models (GMMs).
+
+Introduction
+------------
+In statistics, an expectation–maximization (EM) algorithm is an iterative method for finding maximum likelihood or maximum a posteriori (MAP) estimates of parameters in statistical models, where the model depends on unobserved latent variables.
+
+For this reason EM is frequently used for data clustering, verification and identification of the speaker (biometrics), author profiling based on his documents, automatic document categorization, and many more applications.
 
 Speed Results
 -------------
@@ -14,7 +20,7 @@ Compiling with GCC 4.7 on Mac Os X (2,66GHz Intel Core 2 Duo):
 Data Files
 ----------
 
-The data files used by this software are very simple. They are plain text files of decimal numbers, with a header, and one line per sample vector. This is an expmple:
+The data files used by this software are very simple. They are plain text files of decimal numbers, with a header, and one line per sample vector. This is an example:
 
      AKREALTF
      11     4
@@ -28,8 +34,9 @@ On the header, the first number are the dimension and the second the number of s
 Compiling
 ---------
 
-On Mac Os X and Linux distributions you can simple use the make command on the shell.
-On Windows you can import all to a Dev-Cpp project (for instance) and compile from it.
+On Mac Os X and Linux distributions you can simple use the make command on the system shell to compile it, and then sudo make install to install it on yout system (by default on /usr/bin).
+
+On Windows you can import all to a Dev-Cpp project (for instance) and compile from it. Then move the resulting executables to the directory where you want to use, and use it from the command line.
 
 Usage
 -----
