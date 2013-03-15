@@ -14,24 +14,6 @@ GNU General Public License for more details. */
 #ifndef _gmm_h
 #define _gmm_h
 
-	#include <stdio.h>
-	#include <stdlib.h>
-	#include <math.h>
-	#include <limits.h>
-
-	#ifndef M_PI
-		#define M_PI 3.14159265358979323846
-	#endif
-
-	typedef double decimal; /* Specifies the default decimal type. */
-	typedef int number;     /* Specifies the default integer type. */
-
-	typedef struct{
-		decimal **data;   /* A matrix of samples*dimension elements.  */
-		number samples;   /* Number of samples on the overall data.   */
-		number dimension; /* Number of dimensions of the data loaded. */
-	}data;
-
 	typedef struct{
 		decimal prior;  /* Prior probability of this component of the mixture.   */
 		decimal cgauss; /* Cache storage in order to make faster the classifier. */
@@ -42,13 +24,13 @@ GNU General Public License for more details. */
 	}gauss;
 
 	typedef struct{
-		gauss *mix;       /* Vector of gaussian distributions (above struct).    */ 
+		gauss *mix;       /* Vector of gaussian distributions (above struct).    */
 		number dimension; /* Number of dimensions of the gaussian mixture model. */
 		number num;       /* Number of components of the gaussian mixture model. */
 		decimal *mcov;    /* Minimum allowed covariances to avoid singularities. */
 	}gmm;
 
-	/* Public function prototypes to work with Gaussian Mixture Models. */
+	/* Public functions prototypes to work with Gaussian Mixture Models. */
 	void gmm_save(char*,gmm*);
 	gmm *gmm_load(char*);
 	gmm *gmm_initialize(data*,number);
@@ -56,7 +38,5 @@ GNU General Public License for more details. */
 	decimal gmm_init_classifier(gmm*);
 	decimal gmm_classify(data*,gmm*);
 	decimal gmm_EMtrain(data*,gmm*);
-	data *feas_load(char*);
-	void feas_delete(data*);
 
 #endif
