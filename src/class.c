@@ -15,18 +15,38 @@ GNU General Public License for more details. */
 #include "data.h"
 #include "gmm.h"
 
+typedef struct{
+	pthread_t thread; /* pthread identifier of the current thread. */
+	char *file;	/* Complete path of the file with the model used.  */
+	data *feas; /* Shared pointer (read-only) to loaded samples.   */
+	decimal result; /* Decimal used to store the thread's result.  */
+}threadinfo;
+
+/* Do a classification with the data and the model on parallel thread. */
+void *thread(void *data){
+	threadinfo *info=(threadinfo*)data; /* Get the data for the thread. */
+	gmm *gmix=gmm_load(info->file); /* Load the model form the file.    */
+	info->result=gmm_classify(info->feas,gmix); /* Compute probability. */
+	gmm_delete(gmix);
+	pthread_exit(NULL);
+}
+
 int main(int argc,char *argv[]){
 	if(argc==3|argc==4){
+		threadinfo t1,t2;
 		data *feas=feas_load(argv[1]); /* Load the data from the file.   */
-		gmm *gmix=gmm_load(argv[2]);   /* Load the model form the file.  */
-		decimal result=gmm_classify(feas,gmix); /* Compute probability.  */
-		gmm_delete(gmix);
 		if(argc==4){ /* Only applies if there are a world model defined. */
-			gmix=gmm_load(argv[3]); /* Load world model form file.   */
-			result-=gmm_classify(feas,gmix); /* Obtain final score.  */
-			gmm_delete(gmix);
-			fprintf(stdout,"Score: %.10f\n",result);
-		}else fprintf(stdout,"LogProbability: %.10f\n",result);
+			t2.file=argv[3]; t2.feas=feas;
+			pthread_create(&t2.thread,NULL,thread,(void*)&t2);
+		}
+		t1.file=argv[2]; t1.feas=feas;
+		pthread_create(&t1.thread,NULL,thread,(void*)&t1);
+		pthread_join(t1.thread,NULL); /* We wait to the end of threads. */
+		if(argc==4){
+			pthread_join(t2.thread,NULL); /* Wait to the other thread.  */
+			t1.result-=t2.result;
+		}
+		fprintf(stdout,"LogProbability: %.10f\n",t1.result);
 		feas_delete(feas);
 	}else fprintf(stderr,"Usage: %s <features> <model> [world]\n",argv[0]);
 	return 0;

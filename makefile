@@ -11,7 +11,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 
-CFLAGS := -O3
+CFLAGS := -O3 -pthread
 CC := gcc
 BINDIR := /usr/bin
 
