@@ -49,9 +49,9 @@ decimal gmm_init_classifier(gmm *gmix){
 	}
 }
 
-/* Do a classification with the data and the model on parallel thread. */
+/* Parallel implementation of the E Step of the EM algorithm. */
 void *thread_trainer(void *tdata){
-	trainer *info=(trainer*)tdata; /* Get the data for the thread. */
+	trainer *info=(trainer*)tdata; /* Get the data for the thread and alloc memory. */
 	gmm *gmix=info->gmix; data *feas=info->feas;
 	decimal *zval=(decimal*)calloc(2*gmix->num,sizeof(decimal)),*prob=zval+gmix->num;
 	decimal *mean=(decimal*)calloc(2*gmix->num*gmix->dimension,sizeof(decimal));
@@ -71,7 +71,7 @@ void *thread_trainer(void *tdata){
 		for(m=0,x=0;m<gmix->num;m++) /* Do not use Viterbi aproximation. */
 			x+=exp(prob[m]-maximum);
 		llh+=(rmean=maximum+log(x));
-		for(m=0;m<gmix->num;m++){ /* Accumulate counts of the sample in each Gaussian. */
+		for(m=0;m<gmix->num;m++){ /* Accumulate counts of the sample in memory. */
 			zval[m]+=(tz=exp(prob[m]-rmean)); inc=m*j;
 			for(j=0;j<gmix->dimension;j++){
 				mean[inc+j]+=(x=tz*feas->data[i][j]);
@@ -79,7 +79,7 @@ void *thread_trainer(void *tdata){
 			}
 		}
 	}
-	pthread_mutex_lock(info->mutex);
+	pthread_mutex_lock(info->mutex); /* Accumulate counts obtained to the mixture. */
 	gmix->llh+=llh;
 	for(m=0;m<gmix->num;m++){
 		gmix->mix[m]._z+=zval[m]; inc=m*j;
@@ -97,20 +97,20 @@ void *thread_trainer(void *tdata){
 decimal gmm_EMtrain(data *feas,gmm *gmix){
 	pthread_mutex_t *mutex=(pthread_mutex_t*)calloc(1,sizeof(pthread_mutex_t));
 	trainer *t=(trainer*)calloc(NUM_THREADS,sizeof(trainer));
-	number m,i,j,inc;
-	decimal tz,x;
+	number m,i,j,inc; decimal tz,x;
 	/* Calculate expected value and accumulate the counts (E Step). */
 	gmm_init_classifier(gmix);
 	pthread_mutex_init(mutex,NULL);
 	inc=feas->samples/NUM_THREADS;
-	for(i=0;i<NUM_THREADS;i++){
+	for(i=0;i<NUM_THREADS;i++){ /* Set and launch the parallel training. */
 		t[i].feas=feas; t[i].gmix=gmix;
 		t[i].mutex=mutex; t[i].ini=i*inc;
 		t[i].end=(i==NUM_THREADS-1)?(feas->samples):((i+1)*inc);
 		pthread_create(&t[i].thread,NULL,thread_trainer,(void*)&t[i]);
 	}
-	for(i=0;i<NUM_THREADS;i++)
+	for(i=0;i<NUM_THREADS;i++) /* Wait to the end of the parallel training. */
 		pthread_join(t[i].thread,NULL);
+	pthread_mutex_destroy(mutex);
 	/* Estimate the new parameters of the Gaussian Mixture (M Step). */
 	for(m=0;m<gmix->num;m++){
 		gmix->mix[m].prior=log((tz=gmix->mix[m]._z)/feas->samples);

@@ -21,7 +21,7 @@ GNU General Public License for more details. */
 		decimal *dcov;  /* Diagonal covariances, when classify are the inverses. */
 		decimal *_mean; /* Counts to estimate the future parameter (used by EM). */
 		decimal *_dcov; /* Counts to estimate the future parameter (used by EM). */
-		decimal _z;
+		decimal _z;     /* Counts to estimate the future parameter (used by EM). */
 	}gauss;
 
 	typedef struct{
@@ -33,12 +33,11 @@ GNU General Public License for more details. */
 	}gmm;
 
 	typedef struct{
-		pthread_t thread; /* pthread identifier of the current thread. */
-		pthread_mutex_t *mutex;
-		data *feas; /* Shared pointer (read-only) to loaded samples.   */
-		gmm *gmix;
-		number ini;
-		number end;
+		pthread_t thread;       /* pthread identifier of the thread.   */
+		pthread_mutex_t *mutex; /* Common mutex to lock shared data.   */
+		data *feas;             /* Shared pointer to loaded samples.   */
+		gmm *gmix;              /* Shared pointer to gaussian mixture. */
+		number ini, end;        /* Initial and final sample processed. */
 	}trainer;
 
 	/* Public functions prototypes to work with Gaussian Mixture Models. */
