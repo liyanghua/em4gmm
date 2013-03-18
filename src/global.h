@@ -20,9 +20,8 @@ GNU General Public License for more details. */
 	#include <limits.h>
 	#include <pthread.h>
 
-	#ifndef M_PI
-		#define M_PI 3.14159265358979323846
-	#endif
+	#define NUM_PI 3.14159265358979323846
+	#define NUM_THREADS 16
 
 	typedef double decimal; /* Specifies the default decimal type. */
 	typedef int number;     /* Specifies the default integer type. */

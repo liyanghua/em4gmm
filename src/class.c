@@ -23,8 +23,8 @@ typedef struct{
 }threadinfo;
 
 /* Do a classification with the data and the model on parallel thread. */
-void *thread(void *data){
-	threadinfo *info=(threadinfo*)data; /* Get the data for the thread. */
+void *thread(void *tdata){
+	threadinfo *info=(threadinfo*)tdata; /* Get the data for the thread. */
 	gmm *gmix=gmm_load(info->file); /* Load the model form the file.    */
 	info->result=gmm_classify(info->feas,gmix); /* Compute probability. */
 	gmm_delete(gmix);

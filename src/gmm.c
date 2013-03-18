@@ -36,10 +36,10 @@ decimal gmm_classify(data *feas,gmm *gmix){
 
 /* Initialize the classifier by calculating the non-data dependant part. */
 decimal gmm_init_classifier(gmm *gmix){
-	decimal cache=gmix->dimension*(-0.5)*log(2*M_PI);
-	number m,j;
+	decimal cache=gmix->dimension*(-0.5)*log(2*NUM_PI);
+	number m,j; gmix->llh=0;
 	for(m=0;m<gmix->num;m++){
-		gmix->mix[m].cgauss=0;
+		gmix->mix[m].cgauss=gmix->mix[m]._z=0;
 		for(j=0;j<gmix->dimension;j++){
 			gmix->mix[m].cgauss+=log(gmix->mix[m].dcov[j]);
 			gmix->mix[m].dcov[j]=1/gmix->mix[m].dcov[j];
@@ -49,14 +49,15 @@ decimal gmm_init_classifier(gmm *gmix){
 	}
 }
 
-/* Perform one iteration of the EM algorithm with the data and the mixture indicated. */
-decimal gmm_EMtrain(data *feas,gmm *gmix){
-	decimal *prob=(decimal*)calloc(gmix->num<<1,sizeof(decimal));
-	decimal tz,mean,llh=0,*z=prob+gmix->num,x,maximum;
-	number i,m,j;
-	/* Calculate expected value and accumulate the counts (E Step). */
-	gmm_init_classifier(gmix);
-	for(i=0;i<feas->samples;i++){
+/* Do a classification with the data and the model on parallel thread. */
+void *thread_trainer(void *tdata){
+	trainer *info=(trainer*)tdata; /* Get the data for the thread. */
+	gmm *gmix=info->gmix; data *feas=info->feas;
+	decimal *zval=(decimal*)calloc(2*gmix->num,sizeof(decimal)),*prob=zval+gmix->num;
+	decimal *mean=(decimal*)calloc(2*gmix->num*gmix->dimension,sizeof(decimal));
+	decimal *dcov=mean+(gmix->num*gmix->dimension),llh=0,x,tz,rmean,maximum;
+	number i,j,m,inc;
+	for(i=info->ini;i<info->end;i++){
 		maximum=-HUGE_VAL;
 		for(m=0;m<gmix->num;m++){ /* Compute expected class value of the sample. */
 			prob[m]=gmix->mix[m].cgauss;
@@ -69,27 +70,58 @@ decimal gmm_EMtrain(data *feas,gmm *gmix){
 		}
 		for(m=0,x=0;m<gmix->num;m++) /* Do not use Viterbi aproximation. */
 			x+=exp(prob[m]-maximum);
-		llh+=(mean=maximum+log(x));
+		llh+=(rmean=maximum+log(x));
 		for(m=0;m<gmix->num;m++){ /* Accumulate counts of the sample in each Gaussian. */
-			z[m]+=(tz=exp(prob[m]-mean));
+			zval[m]+=(tz=exp(prob[m]-rmean)); inc=m*j;
 			for(j=0;j<gmix->dimension;j++){
-				gmix->mix[m]._mean[j]+=(x=tz*feas->data[i][j]);
-				gmix->mix[m]._dcov[j]+=x*feas->data[i][j];
+				mean[inc+j]+=(x=tz*feas->data[i][j]);
+				dcov[inc+j]+=x*feas->data[i][j];
 			}
 		}
 	}
+	pthread_mutex_lock(info->mutex);
+	gmix->llh+=llh;
+	for(m=0;m<gmix->num;m++){
+		gmix->mix[m]._z+=zval[m]; inc=m*j;
+		for(j=0;j<gmix->dimension;j++){
+			gmix->mix[m]._mean[j]+=mean[inc+j];
+			gmix->mix[m]._dcov[j]+=dcov[inc+j];
+		}
+	}
+	pthread_mutex_unlock(info->mutex);
+	free(zval); free(mean);
+	pthread_exit(NULL);
+}
+
+/* Perform one iteration of the EM algorithm with the data and the mixture indicated. */
+decimal gmm_EMtrain(data *feas,gmm *gmix){
+	pthread_mutex_t *mutex=(pthread_mutex_t*)calloc(1,sizeof(pthread_mutex_t));
+	trainer *t=(trainer*)calloc(NUM_THREADS,sizeof(trainer));
+	number m,i,j,inc;
+	decimal tz,x;
+	/* Calculate expected value and accumulate the counts (E Step). */
+	gmm_init_classifier(gmix);
+	pthread_mutex_init(mutex,NULL);
+	inc=feas->samples/NUM_THREADS;
+	for(i=0;i<NUM_THREADS;i++){
+		t[i].feas=feas; t[i].gmix=gmix;
+		t[i].mutex=mutex; t[i].ini=i*inc;
+		t[i].end=(i==NUM_THREADS-1)?(feas->samples):((i+1)*inc);
+		pthread_create(&t[i].thread,NULL,thread_trainer,(void*)&t[i]);
+	}
+	for(i=0;i<NUM_THREADS;i++)
+		pthread_join(t[i].thread,NULL);
 	/* Estimate the new parameters of the Gaussian Mixture (M Step). */
 	for(m=0;m<gmix->num;m++){
-		gmix->mix[m].prior=log(z[m]/feas->samples);
+		gmix->mix[m].prior=log((tz=gmix->mix[m]._z)/feas->samples);
 		for(j=0;j<gmix->dimension;j++){
-			gmix->mix[m].mean[j]=(x=gmix->mix[m]._mean[j]/z[m]);
-			gmix->mix[m].dcov[j]=(gmix->mix[m]._dcov[j]/z[m])-(x*x);
+			gmix->mix[m].mean[j]=(x=gmix->mix[m]._mean[j]/tz);
+			gmix->mix[m].dcov[j]=(gmix->mix[m]._dcov[j]/tz)-(x*x);
 			if(gmix->mix[m].dcov[j]<gmix->mcov[j]) /* Smoothing covariances. */
 				gmix->mix[m].dcov[j]=gmix->mcov[j];
 		}
 	}
-	free(prob);
-	return llh/feas->samples;
+	return gmix->llh/feas->samples;
 }
 
 /* Allocate contiguous memory to create a new Gaussian Mixture. */

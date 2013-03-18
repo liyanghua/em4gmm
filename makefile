@@ -12,6 +12,7 @@
 # GNU General Public License for more details.
 
 CFLAGS := -O3 -pthread
+DFLAGS := -g -pthread
 CC := gcc
 BINDIR := /usr/bin
 
@@ -24,6 +25,12 @@ all:
 	$(CC) $(CFLAGS) $(ALL) $(SRC)/train.c -o $(BIN)/gmmtrain -lm
 	strip $(BIN)/gmmclass
 	strip $(BIN)/gmmtrain
+	chmod +x $(BIN)/gmmclass
+	chmod +x $(BIN)/gmmtrain
+
+debug:
+	$(CC) $(DFLAGS) $(ALL) $(SRC)/class.c -o $(BIN)/gmmclass -lm
+	$(CC) $(DFLAGS) $(ALL) $(SRC)/train.c -o $(BIN)/gmmtrain -lm
 	chmod +x $(BIN)/gmmclass
 	chmod +x $(BIN)/gmmtrain
 
