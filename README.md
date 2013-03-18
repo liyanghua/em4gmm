@@ -21,6 +21,8 @@ On Mac Os X and Linux distributions you can simple use the make command on the s
 
 On Windows you can import all to a Dev-Cpp project (for instance) and compile from it. Then move the resulting executables to the directory where you want to use, and use it from the command line. Note that you will need to link the port of the pthreads library for your Windows compiler to success it.
 
+Note that the default compilation makes this program work with 16 threads, if for any reason you want to change this value, feel free to edit the NUM_THREADS constant on the global.h file.
+
 Usage
 -----
 
@@ -46,7 +48,7 @@ Speed Results
 
 Compiling with GCC 4.7 on Mac Os X (2,66GHz Intel Core 2 Duo):
 
-     Training with 134479 samples (11 dimensions) using 128 mixtures takes 11.7 seconds.
+     Training with 134479 samples (11 dimensions) using 128 mixtures takes 6.7 seconds.
      Classify 134479 samples (11 dimensions) with the previous model takes 0.7 seconds.
      The same classification as before, but also using a world model also takes 0.7 seconds.
 
