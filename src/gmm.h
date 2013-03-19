@@ -40,13 +40,21 @@ GNU General Public License for more details. */
 		number ini, end;        /* Initial and final sample processed. */
 	}trainer;
 
+	typedef struct{
+		pthread_t thread; /* pthread identifier of the thread.   */
+		decimal result;   /* Variable to store the result found. */
+		data *feas;       /* Shared pointer to loaded samples.   */
+		gmm *gmix;        /* Shared pointer to gaussian mixture. */
+		number ini, end;  /* Initial and final sample processed. */
+	}classifier;
+
 	/* Public functions prototypes to work with Gaussian Mixture Models. */
 	void gmm_save(char*,gmm*);
 	gmm *gmm_load(char*);
 	gmm *gmm_initialize(data*,number);
 	void gmm_delete(gmm*);
-	decimal gmm_init_classifier(gmm*);
-	decimal gmm_classify(data*,gmm*);
-	decimal gmm_EMtrain(data*,gmm*);
+	void gmm_init_classifier(gmm*);
+	decimal gmm_classify(data*,gmm*,number);
+	decimal gmm_EMtrain(data*,gmm*,number);
 
 #endif

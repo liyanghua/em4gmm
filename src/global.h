@@ -18,9 +18,10 @@ GNU General Public License for more details. */
 	#include <stdlib.h>
 	#include <math.h>
 	#include <limits.h>
+	#include <string.h>
 	#include <pthread.h>
 
-	#define NUM_PI 3.14159265358979323846
+	#define NUM_PI      3.14159265358979323846
 	#define NUM_THREADS 16  /* Number of working threads (1 min).  */
 
 	typedef double decimal; /* Specifies the default decimal type. */

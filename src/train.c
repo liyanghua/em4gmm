@@ -15,6 +15,7 @@ GNU General Public License for more details. */
 #include "data.h"
 #include "gmm.h"
 
+/* Main execution of the trainer. */
 int main(int argc,char *argv[]) {
 	if(argc==4||argc==5){
 		decimal last=INT_MIN,llh,sigma=0.1;
@@ -23,10 +24,10 @@ int main(int argc,char *argv[]) {
 		data *feas=feas_load(argv[2]); /* Load the features from the specified file.   */
 		gmm *gmix=gmm_initialize(feas,atoi(argv[1])); /* Do a good GMM initialization. */
 		for(i=1;i<101;i++){ /* We set 100 maximum iterations to obtain EM convergence. */
-			llh=gmm_EMtrain(feas,gmix); /* Do one iteration of the EM algorithm.   */
+			llh=gmm_EMtrain(feas,gmix,NUM_THREADS); /* Compute one iteration of EM.    */
 			printf("Iteration: %03i    Improvement: %3i%c    LogLikelihood: %.3f\n",
-				i,abs(round(-100*(llh-last)/last)),'%',llh); /* Show EM data.  */
-			if(last-llh>-sigma||isnan(last-llh)) break; /* Test sigma threshold.   */
+				i,abs(round(-100*(llh-last)/last)),'%',llh); /* Show the EM results.   */
+			if(last-llh>-sigma||isnan(last-llh)) break; /* Break with sigma threshold. */
 			last=llh;
 		}
 		feas_delete(feas);

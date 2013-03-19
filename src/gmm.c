@@ -15,11 +15,12 @@ GNU General Public License for more details. */
 #include "data.h"
 #include "gmm.h"
 
-/* Efficient Gaussian Mixture classifier using a Viterbi aproximation. */
-decimal gmm_classify(data *feas,gmm *gmix){
+void *thread_classifier(void *tdata){
+	classifier *info=(classifier*)tdata;
+	gmm *gmix=info->gmix; data *feas=info->feas;
 	decimal x,maximum,prob,s=0;
 	number i,m,j;
-	for(i=0;i<feas->samples;i++){
+	for(i=info->ini;i<info->end;i++){
 		maximum=-HUGE_VAL;
 		for(m=0;m<gmix->num;m++){
 			prob=gmix->mix[m].cgauss; /* The non-data dependant part was precalculated. */
@@ -29,13 +30,30 @@ decimal gmm_classify(data *feas,gmm *gmix){
 			}
 			if(maximum<prob)maximum=prob;
 		}
-		s+=maximum; /* Fast classifier using Viterbi aproximation. */
+		info->result+=maximum; /* Fast classifier using Viterbi aproximation. */
+	}
+	pthread_exit(NULL);
+}
+
+/* Efficient Gaussian Mixture classifier using a Viterbi aproximation. */
+decimal gmm_classify(data *feas,gmm *gmix,number numthreads){
+	classifier *t=(classifier*)calloc(numthreads,sizeof(classifier));
+	number i,inc=feas->samples/numthreads;
+	decimal s=0;
+	for(i=0;i<numthreads;i++){ /* Set and launch the parallel classify. */
+		t[i].feas=feas; t[i].gmix=gmix; t[i].ini=i*inc;
+		t[i].end=(i==numthreads-1)?(feas->samples):((i+1)*inc);
+		pthread_create(&t[i].thread,NULL,thread_classifier,(void*)&t[i]);
+	}
+	for(i=0;i<numthreads;i++){ /* Wait to the end of the parallel classify. */
+		pthread_join(t[i].thread,NULL);
+		s+=t[i].result;
 	}
 	return (s*0.5)/feas->samples;
 }
 
 /* Initialize the classifier by calculating the non-data dependant part. */
-decimal gmm_init_classifier(gmm *gmix){
+void gmm_init_classifier(gmm *gmix){
 	decimal cache=gmix->dimension*(-0.5)*log(2*NUM_PI);
 	number m,j; gmix->llh=0;
 	for(m=0;m<gmix->num;m++){
@@ -94,21 +112,21 @@ void *thread_trainer(void *tdata){
 }
 
 /* Perform one iteration of the EM algorithm with the data and the mixture indicated. */
-decimal gmm_EMtrain(data *feas,gmm *gmix){
+decimal gmm_EMtrain(data *feas,gmm *gmix,number numthreads){
 	pthread_mutex_t *mutex=(pthread_mutex_t*)calloc(1,sizeof(pthread_mutex_t));
-	trainer *t=(trainer*)calloc(NUM_THREADS,sizeof(trainer));
+	trainer *t=(trainer*)calloc(numthreads,sizeof(trainer));
 	number m,i,j,inc; decimal tz,x;
 	/* Calculate expected value and accumulate the counts (E Step). */
 	gmm_init_classifier(gmix);
 	pthread_mutex_init(mutex,NULL);
-	inc=feas->samples/NUM_THREADS;
-	for(i=0;i<NUM_THREADS;i++){ /* Set and launch the parallel training. */
+	inc=feas->samples/numthreads;
+	for(i=0;i<numthreads;i++){ /* Set and launch the parallel training. */
 		t[i].feas=feas; t[i].gmix=gmix;
 		t[i].mutex=mutex; t[i].ini=i*inc;
-		t[i].end=(i==NUM_THREADS-1)?(feas->samples):((i+1)*inc);
+		t[i].end=(i==numthreads-1)?(feas->samples):((i+1)*inc);
 		pthread_create(&t[i].thread,NULL,thread_trainer,(void*)&t[i]);
 	}
-	for(i=0;i<NUM_THREADS;i++) /* Wait to the end of the parallel training. */
+	for(i=0;i<numthreads;i++) /* Wait to the end of the parallel training. */
 		pthread_join(t[i].thread,NULL);
 	pthread_mutex_destroy(mutex);
 	/* Estimate the new parameters of the Gaussian Mixture (M Step). */
