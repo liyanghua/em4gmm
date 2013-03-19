@@ -21,7 +21,7 @@ On Mac Os X and Linux distributions you can simple use the make command on the s
 
 On Windows you can import all to a Dev-Cpp project (for instance) and compile from it. Then move the resulting executables to the directory where you want to use, and use it from the command line. Note that you will need to link the port of the pthreads library for your Windows compiler to success it.
 
-Note that the default compilation makes this program work with 16 threads, if for any reason you want to change this value, feel free to edit the NUM_THREADS constant on the global.h file.
+Note that the default compilation makes this program work with 16 threads, if for any reason you want to change this value, feel free to edit the NUM_THREADS constant on the global.h file. Note that the minimum value of this constant must be 1.
 
 Usage
 -----
@@ -48,9 +48,9 @@ Speed Results
 
 Compiling with GCC 4.7 on Mac Os X (2,66GHz Intel Core 2 Duo):
 
-     Training with 134479 samples (11 dimensions) using 128 mixtures takes 6.7 seconds.
-     Classify 134479 samples (11 dimensions) with the previous model takes 0.7 seconds.
-     The same classification as before, but also using a world model also takes 0.7 seconds.
+     Training with 100000 samples (10 dimensions) using 128 mixtures takes 5.81 seconds.
+     Classify 100000 samples (10 dimensions) with the previous model takes 0.35 seconds.
+     The same classification as before, but also using a world model takes 0.47 seconds.
 
 Data Files
 ----------
@@ -64,7 +64,7 @@ The data files used by this software are very simple. They are plain text files 
       932     5381     5567     5175     3613     3499     2429     2536      652      913      337
       838     6401     5961     5277     4418     3468     2516     1644      921      391       74
 
-On the header, the first number are the dimension and the second the number of samples. The sample's vectors can be integers or decimals (using "." as separator), and the dimensions must be space-separated.
+On the header, the first number are the dimension and the second the number of samples. The sample's vectors can be integers or decimals (using "." as separator), and the dimensions must be space-separated. Also, you have an example of a data file on the dat directory of this project.
 
 Issues and Bugs
 ---------------
