@@ -15,6 +15,7 @@ GNU General Public License for more details. */
 #include "data.h"
 #include "gmm.h"
 
+/* Parallel implementation of the Gaussian Mixture classifier. */
 void *thread_classifier(void *tdata){
 	classifier *info=(classifier*)tdata;
 	gmm *gmix=info->gmix; data *feas=info->feas;

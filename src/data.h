@@ -22,6 +22,15 @@ GNU General Public License for more details. */
 		decimal *variance; /* Variance (no square root) of samples.    */
 	}data;
 
+	typedef struct{
+		pthread_t thread;      /* pthread identifier of this thread.    */
+		data *feas;            /* Shared pointer to samples structure.  */
+		number r,s,d,c,sign;   /* Internal variables shared by threads. */
+		number header,point;   /* Internal variables shared by threads. */
+		decimal *aux,next,dec; /* Internal variables shared by threads. */
+		char *buff;            /* Pointer to loaded bytes on memory.    */
+	}loader;
+
 	/* Public functions prototypes to work with the samples. */
 	data *feas_load(char*);
 	void feas_delete(data*);
