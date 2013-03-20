@@ -17,32 +17,45 @@ GNU General Public License for more details. */
 /* Load the samples from a plain text file with the specified format. */
 data *feas_load(char *filename){
 	data *feas=(data*)calloc(1,sizeof(data));
-	number i,j;
-	char header[9]; /* Read the header and alloc all the memory needed. */
+	char *buff=(char*)calloc(SIZE_BUFFER,sizeof(char));
+	number i,r,s=0,d=0,c=0,header=2,point=0,sign=1;
+	decimal *aux,next=0,dec=1;
 	FILE *f=fopen(filename,"r");
 	if(!f) fprintf(stderr,"Error: Not %s feature file found.\n",filename),exit(1);
-	fscanf(f,"%s",header);
-	if(strcmp(header,"AKREALTF")!=0)
-		fprintf(stderr,"Error: Wrong %s feature file format.\n",filename),exit(1);
-	fscanf(f,"%i %i",&feas->dimension,&feas->samples);
-	feas->mean=(decimal*)calloc(2*feas->dimension,sizeof(decimal*));
-	feas->variance=feas->mean+feas->dimension;
-	feas->data=(decimal**)calloc(feas->samples,sizeof(decimal*));
-	decimal *aux=(decimal*)calloc(feas->dimension*(feas->samples+2),sizeof(decimal));
-	for(i=0;i<feas->samples;i++){ /* Read all the samples and store the counts. */
-		feas->data[i]=aux;
-		aux+=feas->dimension;
-		for(j=0;j<feas->dimension;j++){
-			fscanf(f,"%lf",&feas->data[i][j]);
-			feas->mean[j]+=feas->data[i][j];
-			feas->variance[j]+=feas->data[i][j]*feas->data[i][j];
+	while(!feof(f)){
+		r=fread(buff,sizeof(char),SIZE_BUFFER,f);
+		for(i=0;i<r;i++){
+			if(buff[i]>='0'){ /* Convert an array into a decimal number. */
+				next=(point==0)?((10*next)+buff[i]-'0'):(next+((dec*=0.1)*(buff[i]-'0'))),c++;
+			}else if(buff[i]<'-'&&c>0){
+				if(header==0){
+					if(d==0){ /* If we start a new sample, set the memory. */
+						feas->data[s]=aux;
+						aux+=feas->dimension;
+					}
+					feas->data[s][d]=next*sign; /* Asign the decimal to the sample. */
+					feas->mean[d]+=feas->data[s][d];
+					feas->variance[d]+=feas->data[s][d]*feas->data[s][d];
+					if((++d)==feas->dimension)d=0,s++;
+				}else if(header==1){
+					feas->samples=(int)next;
+					feas->mean=(decimal*)calloc(2*feas->dimension,sizeof(decimal*));
+					feas->variance=feas->mean+feas->dimension;
+					feas->data=(decimal**)calloc(feas->samples,sizeof(decimal*));
+					aux=(decimal*)calloc(feas->dimension*feas->samples,sizeof(decimal));
+					header=s=d=0;
+				}else if(header==2)feas->dimension=(int)next,header=1;
+				sign=dec=1,next=point=c=0;
+			}else if(buff[i]=='-')sign=-1;
+			else if(buff[i]=='.')point=1;
 		}
 	}
-	for(j=0;j<feas->dimension;j++){ /* Compute the mean and variance of the data. */
-		feas->mean[j]/=feas->samples;
-		feas->variance[j]=(feas->variance[j]/feas->samples)-(feas->mean[j]*feas->mean[j]);
-	}
+	free(buff);
 	fclose(f);
+	for(i=0;i<feas->dimension;i++){ /* Compute the mean and variance of the data. */
+		feas->mean[i]/=feas->samples;
+		feas->variance[i]=(feas->variance[i]/feas->samples)-(feas->mean[i]*feas->mean[i]);
+	}
 	return feas;
 }
 
