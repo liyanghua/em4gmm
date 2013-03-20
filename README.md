@@ -49,7 +49,7 @@ Speed Results
 Compiling with GCC 4.7 on Mac Os X (2,66GHz Intel Core 2 Duo):
 
      Training with 100000 samples (10 dimensions) using 128 mixtures takes 5.81 seconds.
-     Classify 100000 samples (10 dimensions) with the previous model takes 0.35 seconds.
+     Classify 100000 samples (10 dimensions) with the previous model takes 0.31 seconds.
      The same classification as before, but also using a world model takes 0.47 seconds.
 
 Data Files
@@ -57,7 +57,6 @@ Data Files
 
 The data files used by this software are very simple. They are plain text files of decimal numbers, with a header, and one line per sample vector. This is an example of a very short data file:
 
-     AKREALTF
      11       4
      1025     7706     6830     5571     4169     2858     1809     1094      688      500      417
      1147     5755     6636     6234     4118     4593     2750     3649      774     1568     1104
