@@ -17,34 +17,32 @@ GNU General Public License for more details. */
 /* Asynchronous implementation of the buffer to feas converter. */
 void *thread_loader(void *tdata){
 	loader *t=(loader*)tdata; number i;
-	data *feas=t->feas; char *buff=t->buff;
 	for(i=0;i<t->r;i++){
-		if(buff[i]>='0'){ /* Convert an array into a decimal number. */
-			t->next=(t->point==0)?((10*t->next)+buff[i]-'0'):
-				(t->next+((t->dec*=0.1)*(buff[i]-'0'))),t->c++;
-		}else if(buff[i]<'-'&&t->c>0){
+		if(t->buff[i]>='0'){ /* Convert an array into a decimal number. */
+			t->next=(t->point==0)?((10*t->next)+t->buff[i]-'0'):
+				(t->next+((t->dec*=0.1)*(t->buff[i]-'0'))),t->c++;
+		}else if(t->buff[i]<'-'&&t->c>0){
 			if(t->header==0){
 				if(t->d==0){ /* If we start a new sample, set the memory. */
-					feas->data[t->s]=t->aux;
-					t->aux+=feas->dimension;
+					t->feas->data[t->s]=t->aux;
+					t->aux+=t->feas->dimension;
 				}
-				feas->data[t->s][t->d]=t->next*t->sign;
-				feas->mean[t->d]+=feas->data[t->s][t->d];
-				feas->variance[t->d]+=feas->data[t->s][t->d]*feas->data[t->s][t->d];
-				if((++t->d)==feas->dimension)t->d=0,t->s++;
+				t->feas->data[t->s][t->d]=t->next*t->sign;
+				t->feas->mean[t->d]+=t->feas->data[t->s][t->d];
+				t->feas->variance[t->d]+=t->feas->data[t->s][t->d]*t->feas->data[t->s][t->d];
+				if((++t->d)==t->feas->dimension)t->d=0,t->s++;
 			}else if(t->header==1){ /* Finish header reading and alloc needed memory. */
-				feas->samples=(int)t->next;
-				feas->mean=(decimal*)calloc(2*feas->dimension,sizeof(decimal*));
-				feas->variance=feas->mean+feas->dimension;
-				feas->data=(decimal**)calloc(feas->samples,sizeof(decimal*));
-				t->aux=(decimal*)calloc(feas->dimension*feas->samples,sizeof(decimal));
+				t->feas->samples=(int)t->next;
+				t->feas->mean=(decimal*)calloc(2*t->feas->dimension,sizeof(decimal*));
+				t->feas->variance=t->feas->mean+t->feas->dimension;
+				t->feas->data=(decimal**)calloc(t->feas->samples,sizeof(decimal*));
+				t->aux=(decimal*)calloc(t->feas->dimension*t->feas->samples,sizeof(decimal));
 				t->header=t->s=t->d=0;
-			}else if(t->header==2)feas->dimension=(int)t->next,t->header=1;
+			}else if(t->header==2)t->feas->dimension=(int)t->next,t->header=1;
 			t->sign=t->dec=1,t->next=t->point=t->c=0;
-		}else if(buff[i]=='-')t->sign=-1;
-		else if(buff[i]=='.')t->point=1;
+		}else if(t->buff[i]=='-')t->sign=-1;
+		else if(t->buff[i]=='.')t->point=1;
 	}
-	pthread_exit(NULL);
 }
 
 /* Load the samples from a plain text file with the specified format. */
