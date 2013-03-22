@@ -17,23 +17,21 @@ GNU General Public License for more details. */
 
 /* Parallel implementation of the Gaussian Mixture classifier. */
 void *thread_classifier(void *tdata){
-	classifier *info=(classifier*)tdata;
-	gmm *gmix=info->gmix; data *feas=info->feas;
-	decimal x,maximum,prob,s=0;
+	classifier *t=(classifier*)tdata;
+	decimal x,maximum,prob;
 	number i,m,j;
-	for(i=info->ini;i<info->end;i++){
+	for(i=t->ini;i<t->end;i++){
 		maximum=-HUGE_VAL;
-		for(m=0;m<gmix->num;m++){
-			prob=gmix->mix[m].cgauss; /* The non-data dependant part was precalculated. */
-			for(j=0;j<gmix->dimension;j++){
-				x=feas->data[i][j]-gmix->mix[m].mean[j];
-				prob-=(x*x)*gmix->mix[m].dcov[j];
+		for(m=0;m<t->gmix->num;m++){
+			prob=t->gmix->mix[m].cgauss; /* The non-data dependant part was precalculated. */
+			for(j=0;j<t->gmix->dimension;j++){
+				x=t->feas->data[i][j]-t->gmix->mix[m].mean[j];
+				prob-=(x*x)*t->gmix->mix[m].dcov[j];
 			}
 			if(maximum<prob)maximum=prob;
 		}
-		info->result+=maximum; /* Fast classifier using Viterbi aproximation. */
+		t->result+=maximum; /* Fast classifier using Viterbi aproximation. */
 	}
-	pthread_exit(NULL);
 }
 
 /* Efficient Gaussian Mixture classifier using a Viterbi aproximation. */
