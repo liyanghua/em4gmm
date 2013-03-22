@@ -18,8 +18,7 @@ GNU General Public License for more details. */
 /* Parallel implementation of the Gaussian Mixture classifier. */
 void *thread_classifier(void *tdata){
 	classifier *t=(classifier*)tdata;
-	decimal x,maximum,prob;
-	number i,m,j;
+	decimal x,maximum,prob; number i,m,j;
 	for(i=t->ini;i<t->end;i++){
 		maximum=-HUGE_VAL;
 		for(m=0;m<t->gmix->num;m++){
@@ -68,13 +67,13 @@ void gmm_init_classifier(gmm *gmix){
 
 /* Parallel implementation of the E Step of the EM algorithm. */
 void *thread_trainer(void *tdata){
-	trainer *info=(trainer*)tdata; /* Get the data for the thread and alloc memory. */
-	gmm *gmix=info->gmix; data *feas=info->feas;
+	trainer *t=(trainer*)tdata; /* Get the data for the thread and alloc memory. */
+	gmm *gmix=t->gmix; data *feas=t->feas;
 	decimal *zval=(decimal*)calloc(2*gmix->num,sizeof(decimal)),*prob=zval+gmix->num;
 	decimal *mean=(decimal*)calloc(2*gmix->num*gmix->dimension,sizeof(decimal));
 	decimal *dcov=mean+(gmix->num*gmix->dimension),llh=0,x,tz,rmean,maximum;
 	number i,j,m,inc;
-	for(i=info->ini;i<info->end;i++){
+	for(i=t->ini;i<t->end;i++){
 		maximum=-HUGE_VAL;
 		for(m=0;m<gmix->num;m++){ /* Compute expected class value of the sample. */
 			prob[m]=gmix->mix[m].cgauss;
@@ -96,7 +95,7 @@ void *thread_trainer(void *tdata){
 			}
 		}
 	}
-	pthread_mutex_lock(info->mutex); /* Accumulate counts obtained to the mixture. */
+	pthread_mutex_lock(t->mutex); /* Accumulate counts obtained to the mixture. */
 	gmix->llh+=llh;
 	for(m=0;m<gmix->num;m++){
 		gmix->mix[m]._z+=zval[m]; inc=m*j;
@@ -105,23 +104,21 @@ void *thread_trainer(void *tdata){
 			gmix->mix[m]._dcov[j]+=dcov[inc+j];
 		}
 	}
-	pthread_mutex_unlock(info->mutex);
+	pthread_mutex_unlock(t->mutex);
 	free(zval); free(mean);
-	pthread_exit(NULL);
 }
 
 /* Perform one iteration of the EM algorithm with the data and the mixture indicated. */
 decimal gmm_EMtrain(data *feas,gmm *gmix,number numthreads){
 	pthread_mutex_t *mutex=(pthread_mutex_t*)calloc(1,sizeof(pthread_mutex_t));
 	trainer *t=(trainer*)calloc(numthreads,sizeof(trainer));
-	number m,i,j,inc; decimal tz,x;
+	number m,i,inc; decimal tz,x;
 	/* Calculate expected value and accumulate the counts (E Step). */
 	gmm_init_classifier(gmix);
 	pthread_mutex_init(mutex,NULL);
 	inc=feas->samples/numthreads;
 	for(i=0;i<numthreads;i++){ /* Set and launch the parallel training. */
-		t[i].feas=feas; t[i].gmix=gmix;
-		t[i].mutex=mutex; t[i].ini=i*inc;
+		t[i].feas=feas; t[i].gmix=gmix; t[i].mutex=mutex; t[i].ini=i*inc;
 		t[i].end=(i==numthreads-1)?(feas->samples):((i+1)*inc);
 		pthread_create(&t[i].thread,NULL,thread_trainer,(void*)&t[i]);
 	}
@@ -131,11 +128,11 @@ decimal gmm_EMtrain(data *feas,gmm *gmix,number numthreads){
 	/* Estimate the new parameters of the Gaussian Mixture (M Step). */
 	for(m=0;m<gmix->num;m++){
 		gmix->mix[m].prior=log((tz=gmix->mix[m]._z)/feas->samples);
-		for(j=0;j<gmix->dimension;j++){
-			gmix->mix[m].mean[j]=(x=gmix->mix[m]._mean[j]/tz);
-			gmix->mix[m].dcov[j]=(gmix->mix[m]._dcov[j]/tz)-(x*x);
-			if(gmix->mix[m].dcov[j]<gmix->mcov[j]) /* Smoothing covariances. */
-				gmix->mix[m].dcov[j]=gmix->mcov[j];
+		for(i=0;i<gmix->dimension;i++){
+			gmix->mix[m].mean[i]=(x=gmix->mix[m]._mean[i]/tz);
+			gmix->mix[m].dcov[i]=(gmix->mix[m]._dcov[i]/tz)-(x*x);
+			if(gmix->mix[m].dcov[i]<gmix->mcov[i]) /* Smoothing covariances. */
+				gmix->mix[m].dcov[i]=gmix->mcov[i];
 		}
 	}
 	return gmix->llh/feas->samples;

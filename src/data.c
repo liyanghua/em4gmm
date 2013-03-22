@@ -16,33 +16,33 @@ GNU General Public License for more details. */
 
 /* Asynchronous implementation of the buffer to feas converter. */
 void *thread_loader(void *tdata){
-	loader *info=(loader*)tdata; number i;
-	data *feas=info->feas; char *buff=info->buff;
-	for(i=0;i<info->r;i++){
+	loader *t=(loader*)tdata; number i;
+	data *feas=t->feas; char *buff=t->buff;
+	for(i=0;i<t->r;i++){
 		if(buff[i]>='0'){ /* Convert an array into a decimal number. */
-			info->next=(info->point==0)?((10*info->next)+buff[i]-'0'):
-				(info->next+((info->dec*=0.1)*(buff[i]-'0'))),info->c++;
-		}else if(buff[i]<'-'&&info->c>0){
-			if(info->header==0){
-				if(info->d==0){ /* If we start a new sample, set the memory. */
-					feas->data[info->s]=info->aux;
-					info->aux+=feas->dimension;
+			t->next=(t->point==0)?((10*t->next)+buff[i]-'0'):
+				(t->next+((t->dec*=0.1)*(buff[i]-'0'))),t->c++;
+		}else if(buff[i]<'-'&&t->c>0){
+			if(t->header==0){
+				if(t->d==0){ /* If we start a new sample, set the memory. */
+					feas->data[t->s]=t->aux;
+					t->aux+=feas->dimension;
 				}
-				feas->data[info->s][info->d]=info->next*info->sign;
-				feas->mean[info->d]+=feas->data[info->s][info->d];
-				feas->variance[info->d]+=feas->data[info->s][info->d]*feas->data[info->s][info->d];
-				if((++info->d)==feas->dimension)info->d=0,info->s++;
-			}else if(info->header==1){ /* Finish header reading and alloc needed memory. */
-				feas->samples=(int)info->next;
+				feas->data[t->s][t->d]=t->next*t->sign;
+				feas->mean[t->d]+=feas->data[t->s][t->d];
+				feas->variance[t->d]+=feas->data[t->s][t->d]*feas->data[t->s][t->d];
+				if((++t->d)==feas->dimension)t->d=0,t->s++;
+			}else if(t->header==1){ /* Finish header reading and alloc needed memory. */
+				feas->samples=(int)t->next;
 				feas->mean=(decimal*)calloc(2*feas->dimension,sizeof(decimal*));
 				feas->variance=feas->mean+feas->dimension;
 				feas->data=(decimal**)calloc(feas->samples,sizeof(decimal*));
-				info->aux=(decimal*)calloc(feas->dimension*feas->samples,sizeof(decimal));
-				info->header=info->s=info->d=0;
-			}else if(info->header==2)feas->dimension=(int)info->next,info->header=1;
-			info->sign=info->dec=1,info->next=info->point=info->c=0;
-		}else if(buff[i]=='-')info->sign=-1;
-		else if(buff[i]=='.')info->point=1;
+				t->aux=(decimal*)calloc(feas->dimension*feas->samples,sizeof(decimal));
+				t->header=t->s=t->d=0;
+			}else if(t->header==2)feas->dimension=(int)t->next,t->header=1;
+			t->sign=t->dec=1,t->next=t->point=t->c=0;
+		}else if(buff[i]=='-')t->sign=-1;
+		else if(buff[i]=='.')t->point=1;
 	}
 	pthread_exit(NULL);
 }
