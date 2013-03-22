@@ -55,3 +55,4 @@ clean:
 	rm -f $(BIN)/gmmtrain
 	rm -f $(BIN)/gmmtrain
 	rm -f $(DAT)/data.gmm
+	rm -f *.gcda

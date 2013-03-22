@@ -139,7 +139,7 @@ decimal gmm_EMtrain(data *feas,gmm *gmix,number numthreads){
 }
 
 /* Allocate contiguous memory to create a new Gaussian Mixture. */
-inline gmm *gmm_create(number n,number d){
+gmm *gmm_create(number n,number d){
 	gmm *gmix=(gmm*)calloc(1,sizeof(gmm));
 	gmix->mcov=(decimal*)calloc(gmix->dimension=d,sizeof(decimal));
 	gmix->mix=(gauss*)calloc(gmix->num=n,sizeof(gauss));
@@ -181,7 +181,7 @@ gmm *gmm_initialize(data *feas,number nmix){
 gmm *gmm_load(char *filename){
 	number m,d;
 	FILE *f=fopen(filename,"rb");
-	if(!f) fprintf(stderr,"Error: Not %s model file found.\n",filename),exit(1);
+	if(!f)fprintf(stderr,"Error: Not %s model file found.\n",filename),exit(1);
 	fread(&d,1,sizeof(number),f);
 	fread(&m,1,sizeof(number),f);
 	gmm *gmix=gmm_create(m,d);
@@ -199,7 +199,7 @@ gmm *gmm_load(char *filename){
 void gmm_save(char *filename,gmm *gmix){
 	number m;
 	FILE *f=fopen(filename,"wb");
-	if(!f) fprintf(stderr,"Error: Can not write to %s file.\n",filename),exit(1);
+	if(!f)fprintf(stderr,"Error: Can not write to %s file.\n",filename),exit(1);
 	fwrite(&gmix->dimension,1,sizeof(number),f);
 	fwrite(&gmix->num,1,sizeof(number),f);
 	fwrite(gmix->mcov,sizeof(decimal)*gmix->dimension,1,f);
