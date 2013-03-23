@@ -63,9 +63,9 @@ data *feas_load(char *filename){
 		t->buff=buff,t->r=r;
 		pthread_create(&t->thread,NULL,thread_loader,(void*)t);
 	}
+	gzclose(f);
 	pthread_join(t->thread,NULL);
 	free(t->buff); free(t);
-	gzclose(f);
 	for(i=0;i<feas->dimension;i++){ /* Compute the mean and variance of the data. */
 		feas->mean[i]/=feas->samples;
 		feas->variance[i]=(feas->variance[i]/feas->samples)-(feas->mean[i]*feas->mean[i]);

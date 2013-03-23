@@ -18,16 +18,16 @@ GNU General Public License for more details. */
 /* Parallel implementation of the Gaussian Mixture classifier. */
 void *thread_classifier(void *tdata){
 	classifier *t=(classifier*)tdata;
-	decimal x,max1,max2,prob; number i,m,j;
+	decimal x,max1,max2,prob; number i,m,j,c;
 	for(i=t->ini;i<t->end;i++){
-		max1=-HUGE_VAL;
+		max1=-HUGE_VAL,c=-1;
 		for(m=0;m<t->gmix->num;m++){
-			prob=t->gmix->mix[m].cgauss; /* The non-data dependant part was precalculated. */
+			prob=t->gmix->mix[m].cgauss; /* The precalculated non-data dependant part. */
 			for(j=0;j<t->gmix->dimension;j++){
 				x=t->feas->data[i][j]-t->gmix->mix[m].mean[j];
 				prob-=(x*x)*t->gmix->mix[m].dcov[j];
 			}
-			if(max1<prob)max1=prob; /* Fast classifier using Viterbi aproximation. */
+			if(max1<prob)max1=prob,c=m; /* Fast classifier using Viterbi aproximation. */
 		}
 		if(t->gworld!=NULL){ /* If the world model is defined, use it. */
 			max2=-HUGE_VAL;
@@ -40,25 +40,28 @@ void *thread_classifier(void *tdata){
 				if(max2<prob)max2=prob;
 			}
 		}else max2=0;
-		t->result+=(max1-max2)*0.5;
+		t->result+=(max1-max2)*0.5; /* Compute final probability. */
 	}
 }
 
 /* Efficient Gaussian Mixture classifier using a Viterbi aproximation. */
-decimal gmm_classify(data *feas,gmm *gmix,gmm *gworld,number numthreads){
+cluster *gmm_classify(data *feas,gmm *gmix,gmm *gworld,number numthreads){
 	classifier *t=(classifier*)calloc(numthreads,sizeof(classifier));
+	cluster *c=(cluster*)calloc(1,sizeof(cluster));
+	c->mixture=(number*)calloc(c->samples=feas->samples,sizeof(number));
+	c->prob=(decimal*)calloc(c->samples,sizeof(decimal)),c->result=0;
 	number i,inc=feas->samples/numthreads;
-	decimal s=0;
 	for(i=0;i<numthreads;i++){ /* Set and launch the parallel classify. */
-		t[i].feas=feas; t[i].gmix=gmix; t[i].gworld=gworld; t[i].ini=i*inc;
+		t[i].feas=feas,t[i].gmix=gmix,t[i].gworld=gworld,t[i].ini=i*inc,t[i].c=c;
 		t[i].end=(i==numthreads-1)?(feas->samples):((i+1)*inc);
 		pthread_create(&t[i].thread,NULL,thread_classifier,(void*)&t[i]);
 	}
 	for(i=0;i<numthreads;i++){ /* Wait to the end of the parallel classify. */
 		pthread_join(t[i].thread,NULL);
-		s+=t[i].result;
+		c->result+=t[i].result;
 	}
-	return s/feas->samples;
+	c->result/=feas->samples;
+	return c;
 }
 
 /* Initialize the classifier by calculating the non-data dependant part. */
