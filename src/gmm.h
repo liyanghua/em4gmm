@@ -45,6 +45,7 @@ GNU General Public License for more details. */
 		decimal result;   /* Variable to store the result found. */
 		data *feas;       /* Shared pointer to loaded samples.   */
 		gmm *gmix;        /* Shared pointer to gaussian mixture. */
+		gmm *gworld;      /* Shared pointer to gaussian mixture. */
 		number ini, end;  /* Initial and final sample processed. */
 	}classifier;
 
@@ -54,7 +55,7 @@ GNU General Public License for more details. */
 	gmm *gmm_initialize(data*,number);
 	void gmm_delete(gmm*);
 	void gmm_init_classifier(gmm*);
-	decimal gmm_classify(data*,gmm*,number);
+	decimal gmm_classify(data*,gmm*,gmm*,number);
 	decimal gmm_EMtrain(data*,gmm*,number);
 
 #endif
