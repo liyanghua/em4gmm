@@ -30,7 +30,7 @@ Usage
 
 You can train a model using the gmmtrain utility on a feature train file (described below):
 
-     ./gmmtrain <mixtures> <features> <model> [sigma]
+     gmmtrain <mixtures> <features> <model> [sigma]
           mixtures: number of gaussian mixtures
           features: feature file described before
           model: the place to save the resultant model
@@ -38,10 +38,12 @@ You can train a model using the gmmtrain utility on a feature train file (descri
 
 Also, yo can obtain the score/log-probability of one feature test file (described below):
 
-     ./gmmclass <features> <model> [world]
-           features: feature file described before
-           model: model used to classify the features
-           world: optional world model to uniform data
+     Usage: gmmclass <options>
+       -d file.txt|file.gz   file that contains the samples vectors
+       -m file.gmm           file of the trained model used to classify
+       -w file.gmm           optional world model used to smooth
+       -r file.json          optional file to save the classify log
+       -h                    optional argument that shows this message
 
 The standard process is to train a model for each class, and then classify at the class with highest probability.
 
