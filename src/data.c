@@ -51,7 +51,7 @@ data *feas_load(char *filename){
 	loader *t=(loader*)calloc(1,sizeof(loader));
 	t->s=t->d=t->c=t->point=t->next=0,t->header=2,t->dec=t->sign=1;
 	number i,r; t->feas=feas,t->buff=NULL;
-	gzFile f=gzopen(filename,"r"); /* Read the file using zlib library. */
+	gzFile f=gzopen(filename,"rb"); /* Read the file using zlib library. */
 	if(!f)fprintf(stderr,"Error: Not %s feature file found.\n",filename),exit(1);
 	while(!gzeof(f)){
 		char *buff=(char*)calloc(SIZE_BUFFER,sizeof(char));

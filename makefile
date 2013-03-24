@@ -33,7 +33,7 @@ all:
 	$(CC) $(CFLAGS) -fprofile-generate $(ALL) $(SRC)/class.c -o $(BIN)/gmmclass -pthread -lz -lm
 	strip $(BIN)/gmmclass
 	chmod +x $(BIN)/gmmclass
-	$(BIN)/gmmclass $(DAT)/data.gz $(DAT)/data.gmm $(DAT)/data.gmm
+	$(BIN)/gmmclass -r $(DAT)/results.json -d $(DAT)/data.gz -m $(DAT)/data.gmm -w $(DAT)/data.gmm
 	$(CC) $(CFLAGS) -fprofile-use $(ALL) $(SRC)/class.c -o $(BIN)/gmmclass -pthread -lz -lm
 	strip $(BIN)/gmmclass
 	chmod +x $(BIN)/gmmclass

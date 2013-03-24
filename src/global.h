@@ -19,6 +19,7 @@ GNU General Public License for more details. */
 	#include <limits.h>
 	#include <math.h>
 	#include <string.h>
+	#include <getopt.h>
 	#include <pthread.h>
 	#include <zlib.h>
 

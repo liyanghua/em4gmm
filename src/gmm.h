@@ -42,7 +42,9 @@ GNU General Public License for more details. */
 
 	typedef struct{
 		number samples;  /* Number of samples on the overall data.   */
-		number *mixture; /* The class assigned for each data sample. */
+		number mixtures; /* Number of gaussian mixtures trained.     */
+		number *mix;     /* The class assigned for each data sample. */
+		number *freq;    /* The number of samples in each mixture.   */
 		decimal *prob;   /* The maximum score for each data sample.  */
 		decimal result;  /* Variable to store the result computed.   */
 	}cluster;

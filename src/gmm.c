@@ -40,7 +40,8 @@ void *thread_classifier(void *tdata){
 				if(max2<prob)max2=prob;
 			}
 		}else max2=0;
-		t->result+=(max1-max2)*0.5; /* Compute final probability. */
+		t->c->prob[i]=(max1-max2)*0.5,t->c->mix[i]=c,t->c->freq[c]+=1;
+		t->result+=t->c->prob[i]; /* Compute final probability. */
 	}
 }
 
@@ -48,7 +49,8 @@ void *thread_classifier(void *tdata){
 cluster *gmm_classify(data *feas,gmm *gmix,gmm *gworld,number numthreads){
 	classifier *t=(classifier*)calloc(numthreads,sizeof(classifier));
 	cluster *c=(cluster*)calloc(1,sizeof(cluster));
-	c->mixture=(number*)calloc(c->samples=feas->samples,sizeof(number));
+	c->mix=(number*)calloc(c->samples=feas->samples,sizeof(number));
+	c->freq=(number*)calloc(c->mixtures=gmix->num,sizeof(number));
 	c->prob=(decimal*)calloc(c->samples,sizeof(decimal)),c->result=0;
 	number i,inc=feas->samples/numthreads;
 	for(i=0;i<numthreads;i++){ /* Set and launch the parallel classify. */
