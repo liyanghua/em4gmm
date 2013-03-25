@@ -31,9 +31,10 @@ void show_help(char *filename){
 
 /* Main execution of the classifier. */
 int main(int argc,char *argv[]){
-	number i,o,x=0; char *fnr=NULL,*fnf=NULL,*fnm=NULL,*fnw=NULL;
+	number i,o,x=0,t=16; char *fnr=NULL,*fnf=NULL,*fnm=NULL,*fnw=NULL;
 	while((o=getopt(argc,argv,"d:m:w:r:h"))!=-1){
 		switch(o){
+			case 't': t=atoi(optarg); break;
 			case 'r': fnr=optarg; break;
 			case 'd': fnf=optarg,x++; break;
 			case 'm': fnm=optarg,x++; break;
@@ -46,7 +47,7 @@ int main(int argc,char *argv[]){
 	gmm *gmix=NULL,*gworld=NULL;
 	if(fnw!=NULL)gworld=gmm_load(fnw); /* Load world model if is defined.  */
 	gmix=gmm_load(fnm);
-	cluster *c=gmm_classify(feas,gmix,gworld,NUM_THREADS);
+	cluster *c=gmm_classify(feas,gmix,gworld,t);
 	gmm_delete(gmix);
 	if(gworld!=NULL)gmm_delete(gworld);
 	fprintf(stdout,"Score: %.10f\n",c->result);

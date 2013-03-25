@@ -32,10 +32,11 @@ void show_help(char *filename){
 
 /* Main execution of the trainer. */
 int main(int argc,char *argv[]) {
-	number i,o,x=0,nmix=-1,imax=100; char *fnf=NULL,*fnm=NULL;
+	number i,o,x=0,nmix=-1,imax=100,t=16; char *fnf=NULL,*fnm=NULL;
 	decimal last=INT_MIN,llh,sigma=0.1;
-	while((o=getopt(argc,argv,"i:d:m:n:s:h"))!=-1){
+	while((o=getopt(argc,argv,"t:i:d:m:n:s:h"))!=-1){
 		switch(o){
+			case 't': t=atoi(optarg); break;
 			case 'n': nmix=atoi(optarg); break;
 			case 'i': imax=atoi(optarg); break;
 			case 'd': fnf=optarg,x++; break;
@@ -49,7 +50,7 @@ int main(int argc,char *argv[]) {
 	nmix=(nmix==-1)?sqrt(feas->samples/2):nmix;
 	gmm *gmix=gmm_initialize(feas,nmix); /* Good GMM initialization using data.    */
 	for(i=1;i<=imax;i++){
-		llh=gmm_EMtrain(feas,gmix,NUM_THREADS); /* Compute one iteration of EM.    */
+		llh=gmm_EMtrain(feas,gmix,t); /* Compute one iteration of EM.    */
 		printf("Iteration: %03i    Improvement: %3i%c    LogLikelihood: %.3f\n",
 			i,abs(round(-100*(llh-last)/last)),'%',llh); /* Show the EM results.   */
 		if(last-llh>-sigma||isnan(last-llh))break; /* Break with sigma threshold.  */
