@@ -18,11 +18,15 @@ GNU General Public License for more details. */
 /* Show the classifier help message. */
 void show_help(char *filename){
 	fprintf(stderr,"Usage: %s <options>\n",filename);
-	fprintf(stderr,"  -d file.txt|file.gz   file that contains the samples vectors\n");
-	fprintf(stderr,"  -m file.gmm           file of the trained model used to classify\n");
-	fprintf(stderr,"  -w file.gmm           optional world model used to smooth\n");
-	fprintf(stderr,"  -r file.json          optional file to save the classify log\n");
-	fprintf(stderr,"  -h                    optional argument that shows this message\n");
+	fprintf(stderr,"  Required:\n");
+	fprintf(stderr,"    -d file.txt|file.gz   file that contains the samples vectors\n");
+	fprintf(stderr,"    -m file.gmm           file of the trained model used to classify\n");
+	fprintf(stderr,"  Recommended:\n");
+	fprintf(stderr,"    -w file.gmm           optional world model used to smooth\n");
+	fprintf(stderr,"    -r file.json          optional file to save the classify log\n");
+	fprintf(stderr,"  Optional:\n");
+	fprintf(stderr,"    -t 1-128              optional maximum number of threads used\n");
+	fprintf(stderr,"    -h                    optional argument that shows this message\n");
 }
 
 /* Main execution of the classifier. */
