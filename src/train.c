@@ -25,7 +25,7 @@ void show_help(char *filename){
 	fprintf(stderr,"    -n 2-32768            optional number of components of the mixture\n");
 	fprintf(stderr,"  Optional:\n");
 	fprintf(stderr,"    -s 0.001-1.0          optional stop criterion based on likelihood\n");
-	fprintf(stderr,"    -i 1-1000            optional maximum number of EM iterations\n");
+	fprintf(stderr,"    -i 1-1000             optional maximum number of EM iterations\n");
 	fprintf(stderr,"    -t 1-128              optional maximum number of threads used\n");
 	fprintf(stderr,"    -h                    optional argument that shows this message\n");
 }
@@ -52,7 +52,7 @@ int main(int argc,char *argv[]) {
 		llh=gmm_EMtrain(feas,gmix,NUM_THREADS); /* Compute one iteration of EM.    */
 		printf("Iteration: %03i    Improvement: %3i%c    LogLikelihood: %.3f\n",
 			i,abs(round(-100*(llh-last)/last)),'%',llh); /* Show the EM results.   */
-		if(last-llh>-sigma||isnan(last-llh)) break; /* Break with sigma threshold. */
+		if(last-llh>-sigma||isnan(last-llh))break; /* Break with sigma threshold.  */
 		last=llh;
 	}
 	feas_delete(feas);
