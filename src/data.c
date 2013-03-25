@@ -69,6 +69,7 @@ data *feas_load(char *filename){
 	for(i=0;i<feas->dimension;i++){ /* Compute the mean and variance of the data. */
 		feas->mean[i]/=feas->samples;
 		feas->variance[i]=(feas->variance[i]/feas->samples)-(feas->mean[i]*feas->mean[i]);
+		if(feas->variance[i]<0.000001)feas->variance[i]=0.000001;
 	}
 	return feas;
 }
