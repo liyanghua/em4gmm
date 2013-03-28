@@ -23,8 +23,8 @@ GNU General Public License for more details. */
 	#include <pthread.h>
 	#include <zlib.h>
 
-	#define NUM_PI      3.14159265358979323846
-	#define SIZE_BUFFER 2*1024*1024 /* Samples read cache size.    */
+	#define NUM_PI      3.14159265358979323846 /* Math PI value.   */
+	#define SIZE_BUFFER 2*1024*1024 /* Loader samples cache size.  */
 
 	typedef double decimal; /* Specifies the default decimal type. */
 	typedef int number;     /* Specifies the default integer type. */

@@ -25,8 +25,13 @@ void show_help(char *filename){
 	fprintf(stderr,"    -w file.gmm           optional world model used to smooth\n");
 	fprintf(stderr,"    -r file.json          optional file to save the classify log\n");
 	fprintf(stderr,"  Optional:\n");
-	fprintf(stderr,"    -t 1-128              optional maximum number of threads used\n");
+	fprintf(stderr,"    -t 1-256              optional maximum number of threads used\n");
 	fprintf(stderr,"    -h                    optional argument that shows this message\n");
+}
+
+/* Show an error and leave the program. */
+void show_error(const char *message){
+	fprintf(stderr,"Error: %s.\n",message),exit(1);
 }
 
 /* Main execution of the classifier. */
@@ -34,7 +39,9 @@ int main(int argc,char *argv[]){
 	number i,o,x=0,t=16; char *fnr=NULL,*fnf=NULL,*fnm=NULL,*fnw=NULL;
 	while((o=getopt(argc,argv,"d:m:w:r:h"))!=-1){
 		switch(o){
-			case 't': t=atoi(optarg); break;
+			case 't': t=atoi(optarg);
+				if(t>256||t<1)show_error("Number of threads must be on the 1-256 range");
+				break;
 			case 'r': fnr=optarg; break;
 			case 'd': fnf=optarg,x++; break;
 			case 'm': fnm=optarg,x++; break;

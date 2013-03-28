@@ -22,12 +22,17 @@ void show_help(char *filename){
 	fprintf(stderr,"    -d file.txt|file.gz   file that contains all the samples vectors\n");
 	fprintf(stderr,"    -m file.gmm           file used to save the trained mixture model\n");
 	fprintf(stderr,"  Recommended:\n");
-	fprintf(stderr,"    -n 2-32768            optional number of components of the mixture\n");
+	fprintf(stderr,"    -n 2-524228           optional number of components of the mixture\n");
 	fprintf(stderr,"  Optional:\n");
-	fprintf(stderr,"    -s 0.001-1.0          optional stop criterion based on likelihood\n");
-	fprintf(stderr,"    -i 1-1000             optional maximum number of EM iterations\n");
-	fprintf(stderr,"    -t 1-128              optional maximum number of threads used\n");
+	fprintf(stderr,"    -s 0.0-1.0            optional stop criterion based on likelihood\n");
+	fprintf(stderr,"    -i 1-10000            optional maximum number of EM iterations\n");
+	fprintf(stderr,"    -t 1-256              optional maximum number of threads used\n");
 	fprintf(stderr,"    -h                    optional argument that shows this message\n");
+}
+
+/* Show an error and leave the program. */
+void show_error(const char *message){
+	fprintf(stderr,"Error: %s.\n",message),exit(1);
 }
 
 /* Main execution of the trainer. */
@@ -36,12 +41,20 @@ int main(int argc,char *argv[]) {
 	decimal last=INT_MIN,llh,sigma=0.1;
 	while((o=getopt(argc,argv,"t:i:d:m:n:s:h"))!=-1){
 		switch(o){
-			case 't': t=atoi(optarg); break;
-			case 'n': nmix=atoi(optarg); break;
-			case 'i': imax=atoi(optarg); break;
+			case 't': t=atoi(optarg);
+				if(t>256||t<1)show_error("Number of threads must be on the 1-256 range");
+				break;
+			case 'n': nmix=atoi(optarg);
+				if(nmix>524228||nmix<2)show_error("Number of components must be on the 2-32768 range");
+				break;
+			case 'i': imax=atoi(optarg);
+				if(imax>10000||imax<1)show_error("Number of iterations must be on the 1-10000 range");
+				break;
 			case 'd': fnf=optarg,x++; break;
 			case 'm': fnm=optarg,x++; break;
-			case 's': sigma=atof(optarg); break;
+			case 's': sigma=atof(optarg);
+				if(sigma>1.0||imax<0.0)show_error("Sigma criterion must be on the 0.0-1.0 range");
+				break;
 			case 'h': show_help(argv[0]),exit(1); break;
 		}
 	}
