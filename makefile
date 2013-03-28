@@ -19,7 +19,7 @@ BINDIR := /usr/bin
 SRC := src
 BIN := bin
 DAT := dat
-ALL := $(SRC)/data.c $(SRC)/gmm.c
+ALL := $(SRC)/data.c $(SRC)/gmm_base.c $(SRC)/gmm_core.c $(SRC)/gmm_util.c
 
 all:
 	$(CC) $(CFLAGS) -fprofile-generate $(ALL) $(SRC)/train.c -o $(BIN)/gmmtrain -pthread -lz -lm

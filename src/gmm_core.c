@@ -15,6 +15,21 @@ GNU General Public License for more details. */
 #include "data.h"
 #include "gmm.h"
 
+/* Initialize the classifier by calculating the non-data dependant part. */
+void gmm_init_classifier(gmm *gmix){
+	decimal cache=gmix->dimension*(-0.5)*log(2*NUM_PI);
+	number m,j; gmix->llh=0;
+	for(m=0;m<gmix->num;m++){
+		gmix->mix[m].cgauss=gmix->mix[m]._z=0;
+		for(j=0;j<gmix->dimension;j++){
+			gmix->mix[m].cgauss+=log(gmix->mix[m].dcov[j]);
+			gmix->mix[m].dcov[j]=1/gmix->mix[m].dcov[j];
+			gmix->mix[m]._mean[j]=gmix->mix[m]._dcov[j]=0; /* Caches to 0. */
+		}
+		gmix->mix[m].cgauss=2*(gmix->mix[m].prior-((gmix->mix[m].cgauss*0.5)+cache));
+	}
+}
+
 /* Parallel implementation of the Gaussian Mixture classifier. */
 void *thread_classifier(void *tdata){
 	classifier *t=(classifier*)tdata;
@@ -64,21 +79,6 @@ cluster *gmm_classify(data *feas,gmm *gmix,gmm *gworld,number numthreads){
 	}
 	c->result/=feas->samples;
 	return c;
-}
-
-/* Initialize the classifier by calculating the non-data dependant part. */
-void gmm_init_classifier(gmm *gmix){
-	decimal cache=gmix->dimension*(-0.5)*log(2*NUM_PI);
-	number m,j; gmix->llh=0;
-	for(m=0;m<gmix->num;m++){
-		gmix->mix[m].cgauss=gmix->mix[m]._z=0;
-		for(j=0;j<gmix->dimension;j++){
-			gmix->mix[m].cgauss+=log(gmix->mix[m].dcov[j]);
-			gmix->mix[m].dcov[j]=1/gmix->mix[m].dcov[j];
-			gmix->mix[m]._mean[j]=gmix->mix[m]._dcov[j]=0; /* Caches to 0. */
-		}
-		gmix->mix[m].cgauss=2*(gmix->mix[m].prior-((gmix->mix[m].cgauss*0.5)+cache));
-	}
 }
 
 /* Parallel implementation of the E Step of the EM algorithm. */
@@ -152,113 +152,4 @@ decimal gmm_EMtrain(data *feas,gmm *gmix,number numthreads){
 		}
 	}
 	return gmix->llh/feas->samples;
-}
-
-/* Allocate contiguous memory to create a new Gaussian Mixture. */
-gmm *gmm_create(number n,number d){
-	gmm *gmix=(gmm*)calloc(1,sizeof(gmm));
-	gmix->mcov=(decimal*)calloc(gmix->dimension=d,sizeof(decimal));
-	gmix->mix=(gauss*)calloc(gmix->num=n,sizeof(gauss));
-	for(n=0;n<gmix->num;n++){
-		gmix->mix[n].mean=(decimal*)calloc(gmix->dimension*4,sizeof(decimal));
-		gmix->mix[n].dcov=gmix->mix[n].mean+gmix->dimension;
-		gmix->mix[n]._mean=gmix->mix[n].dcov+gmix->dimension;
-		gmix->mix[n]._dcov=gmix->mix[n]._mean+gmix->dimension;
-	}
-	return gmix;
-}
-
-/* Create and initialize the Mixture with maximum likelihood and disturb the means. */
-gmm *gmm_initialize(data *feas,number nmix){
-	gmm *gmix=gmm_create(nmix,feas->dimension);
-	number i,j,k,b=feas->samples/gmix->num,bc=0;
-	decimal x=1.0/gmix->num;
-	/* Initialize the first Gaussian with maximum likelihood. */
-	gmix->mix[0].prior=log(x);
-	for(j=0;j<gmix->dimension;j++){
-		gmix->mix[0].dcov[j]=x*feas->variance[j];
-		gmix->mcov[j]=0.001*gmix->mix[0].dcov[j];
-	}
-	/* Disturb all the means creating C blocks of samples. */
-	for(i=gmix->num-1;i>=0;i--,bc+=b){
-		gmix->mix[i].prior=gmix->mix[0].prior;
-		for(j=bc,x=0;j<bc+b;j++) /* Compute the mean of a group of samples. */
-			for(k=0;k<gmix->dimension;k++)
-				gmix->mix[i]._mean[k]+=feas->data[j][k];
-		for(k=0;k<gmix->dimension;k++){ /* Disturbe the sample mean for each mixture. */
-			gmix->mix[i].mean[k]=(feas->mean[k]*0.9)+(0.1*gmix->mix[i]._mean[k]/b);
-			gmix->mix[i].dcov[k]=gmix->mix[0].dcov[k];
-		}
-	}
-	return gmix;
-}
-
-/* Load the Gaussian Mixture from the file received as parameter. */
-gmm *gmm_load(char *filename){
-	number m,d;
-	FILE *f=fopen(filename,"rb");
-	if(!f)fprintf(stderr,"Error: Not %s model file found.\n",filename),exit(1);
-	fread(&d,1,sizeof(number),f);
-	fread(&m,1,sizeof(number),f);
-	gmm *gmix=gmm_create(m,d);
-	fread(gmix->mcov,sizeof(decimal)*gmix->dimension,1,f);
-	for(m=0;m<gmix->num;m++){
-		fread(&gmix->mix[m].prior,sizeof(decimal),1,f);
-		fread(&gmix->mix[m].cgauss,sizeof(decimal),1,f);
-		fread(gmix->mix[m].mean,gmix->dimension*sizeof(decimal)*2,1,f);
-	}
-	fclose(f);
-	return gmix;
-}
-
-/* Save the Gaussian Mixture to the file received as parameter. */
-void gmm_save(char *filename,gmm *gmix){
-	number m;
-	FILE *f=fopen(filename,"wb");
-	if(!f)fprintf(stderr,"Error: Can not write to %s file.\n",filename),exit(1);
-	fwrite(&gmix->dimension,1,sizeof(number),f);
-	fwrite(&gmix->num,1,sizeof(number),f);
-	fwrite(gmix->mcov,sizeof(decimal)*gmix->dimension,1,f);
-	for(m=0;m<gmix->num;m++){
-		fwrite(&gmix->mix[m].prior,sizeof(decimal),1,f);
-		fwrite(&gmix->mix[m].cgauss,sizeof(decimal),1,f);
-		fwrite(gmix->mix[m].mean,sizeof(decimal)*gmix->dimension*2,1,f);
-	}
-	fclose(f);
-}
-
-/* Free the allocated memory of the Gaussian Mixture. */
-void gmm_delete(gmm *gmix){
-	number i;
-	for(i=0;i<gmix->num;i++)
-		free(gmix->mix[i].mean);
-	free(gmix->mix);
-	free(gmix);
-}
-
-/* Save the classifier log as a jSON file. */
-void gmm_results_save(char *filename,cluster *c){
-	number i; FILE *f=fopen(filename,"w");
-	if(!f)fprintf(stderr,"Error: Can not write to %s file.\n",filename),exit(1);
-	fprintf(f,"{\n\t\"global_score\": %.10f,",c->result);
-	fprintf(f,"\n\t\"samples\": %i,\n\t\"mixtures\": %i,",c->samples,c->mixtures);
-	fprintf(f,"\n\t\"mixture_occupation\": [ %i",c->freq[0]);
-	for(i=1;i<c->mixtures;i++)
-		fprintf(f,", %i",c->freq[i]);
-	fprintf(f," ],\n\t\"samples_classification\": [ %i",c->mix[0]);
-	for(i=1;i<c->samples;i++)
-		fprintf(f,", %i",c->mix[i]);
-	fprintf(f," ],\n\t\"samples_score\": [ %.10f",c->prob[0]);
-	for(i=1;i<c->samples;i++)
-		fprintf(f,", %.10f",c->prob[i]);
-	fprintf(f," ]\n}");
-	fclose(f);
-}
-
-/* Free the allocated memory of the classifier results. */
-void gmm_results_delete(cluster *c){
-	free(c->mix);
-	free(c->freq);
-	free(c->prob);
-	free(c);
 }
