@@ -24,6 +24,7 @@ void show_help(char *filename){
 	fprintf(stderr,"  Recommended:\n");
 	fprintf(stderr,"    -n 2-524228           optional number of components of the mixture\n");
 	fprintf(stderr,"  Optional:\n");
+	fprintf(stderr,"    -u 0.0-1.0            optional merge threshold based on similarity\n");
 	fprintf(stderr,"    -s 0.0-1.0            optional stop criterion based on likelihood\n");
 	fprintf(stderr,"    -i 1-10000            optional maximum number of EM iterations\n");
 	fprintf(stderr,"    -t 1-256              optional maximum number of threads used\n");
@@ -38,8 +39,8 @@ void show_error(const char *message){
 /* Main execution of the trainer. */
 int main(int argc,char *argv[]) {
 	number i,o,x=0,nmix=-1,imax=100,t=16; char *fnf=NULL,*fnm=NULL;
-	decimal last=INT_MIN,llh,sigma=0.1;
-	while((o=getopt(argc,argv,"t:i:d:m:n:s:h"))!=-1){
+	decimal last=INT_MIN,llh,sigma=0.1,m=1.0;
+	while((o=getopt(argc,argv,"u:t:i:d:m:n:s:h"))!=-1){
 		switch(o){
 			case 't': t=atoi(optarg);
 				if(t>256||t<1)show_error("Number of threads must be on the 1-256 range");
@@ -52,6 +53,9 @@ int main(int argc,char *argv[]) {
 				break;
 			case 'd': fnf=optarg,x++; break;
 			case 'm': fnm=optarg,x++; break;
+			case 'u': m=atof(optarg);
+				if(m>1.0||m<0.0)show_error("Merge threshold must be on the 0.0-1.0 range");
+				break;
 			case 's': sigma=atof(optarg);
 				if(sigma>1.0||imax<0.0)show_error("Sigma criterion must be on the 0.0-1.0 range");
 				break;
@@ -62,12 +66,22 @@ int main(int argc,char *argv[]) {
 	data *feas=feas_load(fnf); /* Load the features from the specified disc file.  */
 	nmix=(nmix==-1)?sqrt(feas->samples/2):nmix;
 	gmm *gmix=gmm_initialize(feas,nmix); /* Good GMM initialization using data.    */
-	for(i=1;i<=imax;i++){
-		llh=gmm_EMtrain(feas,gmix,t); /* Compute one iteration of EM.    */
-		printf("Iteration: %03i    Improvement: %3i%c    LogLikelihood: %.3f\n",
-			i,abs(round(-100*(llh-last)/last)),'%',llh); /* Show the EM results.   */
-		if(last-llh>-sigma||isnan(last-llh))break; /* Break with sigma threshold.  */
-		last=llh;
+	for(o=1;o<=imax;o++){
+		for(i=1;i<=imax;i++){
+			llh=gmm_EMtrain(feas,gmix,t); /* Compute one iteration of EM.    */
+			fprintf(stdout,"Iteration: %05i    Improvement: %3i%c    LogLikelihood: %.3f\n",
+				i,abs(round(-100*(llh-last)/last)),'%',llh); /* Show the EM results.   */
+			if(last-llh>-sigma||isnan(last-llh))break; /* Break with sigma threshold.  */
+			last=llh;
+		}
+		x=gmix->num;
+		if(m<1.0){
+			mergelist *mlst=gmm_merge_list(feas,gmix,m);
+			gmix=gmm_merge(gmix,mlst);
+			fprintf(stdout,"Number of Components: %06i   Merged: %06i\n",gmix->num,x-gmix->num);
+		}
+		if(x==gmix->num)break;
+		last=INT_MIN;
 	}
 	feas_delete(feas);
 	gmm_init_classifier(gmix); /* Pre-compute the non-data dependant part of classifier. */

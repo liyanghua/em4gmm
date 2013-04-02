@@ -29,7 +29,7 @@ GNU General Public License for more details. */
 		number dimension; /* Number of dimensions of the gaussian mixture model. */
 		number num;       /* Number of components of the gaussian mixture model. */
 		decimal *mcov;    /* Minimum allowed covariances to avoid singularities. */
-		decimal llh;
+		decimal llh;      /* LogLikelihood after the training with EM algorithm. */
 	}gmm;
 
 	typedef struct{
@@ -59,9 +59,17 @@ GNU General Public License for more details. */
 		cluster *c;       /* The cluster of the data classified. */
 	}classifier;
 
+	typedef struct{
+		number inimix;
+		number endmix;
+		number *merge;
+		decimal *value;
+	}mergelist;
+
 	/* Public functions prototypes to work with Gaussian Mixture Models. */
 	void gmm_save(char*,gmm*);
 	gmm *gmm_load(char*);
+	gmm *gmm_create(number,number);
 	gmm *gmm_initialize(data*,number);
 	void gmm_delete(gmm*);
 	void gmm_init_classifier(gmm*);
@@ -69,5 +77,7 @@ GNU General Public License for more details. */
 	decimal gmm_EMtrain(data*,gmm*,number);
 	void gmm_results_save(char*,cluster*);
 	void gmm_results_delete(cluster*);
+	mergelist *gmm_merge_list(data*,gmm*,decimal);
+	gmm *gmm_merge(gmm*,mergelist*);
 
 #endif

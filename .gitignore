@@ -1,5 +1,6 @@
 gmmclass
 gmmtrain
 .DS_Store
-data.gmm
-results.json
+*.gmm
+*.json
+*.dSYM
