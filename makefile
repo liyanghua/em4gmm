@@ -25,7 +25,7 @@ all:
 	$(CC) $(CFLAGS) -fprofile-generate $(ALL) $(SRC)/train.c -o $(BIN)/gmmtrain -pthread -lz -lm
 	strip $(BIN)/gmmtrain
 	chmod +x $(BIN)/gmmtrain
-	$(BIN)/gmmtrain -d $(DAT)/data.gz -m $(DAT)/data.gmm -n 256 -s 0.1
+	$(BIN)/gmmtrain -d $(DAT)/data.gz -m $(DAT)/data.gmm -n 128 -s 0.1 -u 0.9
 	$(CC) $(CFLAGS) -fprofile-use $(ALL) $(SRC)/train.c -o $(BIN)/gmmtrain -pthread -lz -lm
 	strip $(BIN)/gmmtrain
 	chmod +x $(BIN)/gmmtrain

@@ -78,6 +78,7 @@ int main(int argc,char *argv[]) {
 		if(m<1.0){
 			mergelist *mlst=gmm_merge_list(feas,gmix,m);
 			gmix=gmm_merge(gmix,mlst);
+			gmm_merge_delete(mlst);
 			fprintf(stdout,"Number of Components: %06i   Merged: %06i\n",gmix->num,x-gmix->num);
 		}
 		if(x==gmix->num)break;

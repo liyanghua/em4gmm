@@ -60,10 +60,10 @@ GNU General Public License for more details. */
 	}classifier;
 
 	typedef struct{
-		number inimix;
-		number endmix;
-		number *merge;
-		decimal *value;
+		number inimix;  /* The initial number of mixture components.  */
+		number endmix;  /* The final number of mixture components.    */
+		number *merge;  /* An index vector for the merged components. */
+		decimal *value; /* Similarity computed on the merge vector.   */
 	}mergelist;
 
 	/* Public functions prototypes to work with Gaussian Mixture Models. */
@@ -79,5 +79,6 @@ GNU General Public License for more details. */
 	void gmm_results_delete(cluster*);
 	mergelist *gmm_merge_list(data*,gmm*,decimal);
 	gmm *gmm_merge(gmm*,mergelist*);
+	void gmm_merge_delete(mergelist*);
 
 #endif
