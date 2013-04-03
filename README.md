@@ -31,12 +31,15 @@ You can train a mixture model using the gmmtrain utility on a feature train file
          -d file.txt|file.gz   file that contains all the samples vectors
          -m file.gmm           file used to save the trained mixture model
        Recommended:
-         -n 2-32768            optional number of components of the mixture
+         -n 2-524228           optional number of components of the mixture
        Optional:
-         -s 0.001-1.0          optional stop criterion based on likelihood
-         -i 1-1000             optional maximum number of EM iterations
-         -t 1-128              optional maximum number of threads used
+         -u 0.0-1.0            optional merge threshold based on similarity
+         -s 0.0-1.0            optional stop criterion based on likelihood
+         -i 1-10000            optional maximum number of EM iterations
+         -t 1-256              optional maximum number of threads used
          -h                    optional argument that shows this message
+
+Using the special "-u" parameter you can activate the merge feature that will try to merge the similar components of the mixture, leaving the model as simple as possible, avoiding overtraining, and speeding up the classifier.
 
 Also, yo can obtain the score/loglikelihood of one feature test file (described below) using the gmmclass utility:
 
