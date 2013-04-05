@@ -44,7 +44,7 @@ gmm *gmm_merge(gmm *gmix,mergelist *mlst){
 
 /* Obtain a merge list based on the similarity of two components. */
 mergelist *gmm_merge_list(data *feas,gmm *gmix,decimal u){
-	decimal x,prob,nmax; number n,m,i,j;
+	decimal x,prob,nmax; number n,m,i,j; u=log(u);
 	mergelist *mlst=(mergelist*)calloc(1,sizeof(mergelist));
 	mlst->merge=(number*)calloc(mlst->inimix=gmix->num,sizeof(number));
 	mlst->value=(decimal*)calloc(mlst->endmix=gmix->num,sizeof(decimal));
@@ -91,7 +91,7 @@ mergelist *gmm_merge_list(data *feas,gmm *gmix,decimal u){
 			for(prob=0,i=0;i<feas->samples;i++) /* Robust computing of the features sum. */
 				prob+=exp(nort[i]-nmax);
 			prob=nmax+log(prob);
-			prob=exp(((prob+prob)-(norm[m]+norm[n]))*0.5); /* Similarity between n and m. */
+			prob=((prob+prob)-(norm[m]+norm[n]))*0.5; /* Similarity between n and m. */
 			if(prob>u){
 				mlst->merge[m]=n,mlst->merge[n]=-1;
 				mlst->value[m]=prob,mlst->endmix--;

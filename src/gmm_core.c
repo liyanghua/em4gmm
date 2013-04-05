@@ -134,7 +134,7 @@ decimal gmm_EMtrain(data *feas,gmm *gmix,number numthreads){
 	pthread_mutex_init(mutex,NULL);
 	inc=feas->samples/numthreads;
 	for(i=0;i<numthreads;i++){ /* Set and launch the parallel training. */
-		t[i].feas=feas; t[i].gmix=gmix; t[i].mutex=mutex; t[i].ini=i*inc;
+		t[i].feas=feas,t[i].gmix=gmix,t[i].mutex=mutex,t[i].ini=i*inc;
 		t[i].end=(i==numthreads-1)?(feas->samples):((i+1)*inc);
 		pthread_create(&t[i].thread,NULL,thread_trainer,(void*)&t[i]);
 	}

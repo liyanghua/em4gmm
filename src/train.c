@@ -39,7 +39,7 @@ void show_error(const char *message){
 /* Main execution of the trainer. */
 int main(int argc,char *argv[]) {
 	number i,o,x=0,nmix=-1,imax=100,t=16; char *fnf=NULL,*fnm=NULL;
-	decimal last=INT_MIN,llh,sigma=0.1,m=1.0;
+	decimal last=INT_MIN,llh,sigma=0.1,m=-1.0;
 	while((o=getopt(argc,argv,"u:t:i:d:m:n:s:h"))!=-1){
 		switch(o){
 			case 't': t=atoi(optarg);
@@ -68,14 +68,14 @@ int main(int argc,char *argv[]) {
 	gmm *gmix=gmm_initialize(feas,nmix); /* Good GMM initialization using data.    */
 	for(o=1;o<=imax;o++){
 		for(i=1;i<=imax;i++){
-			llh=gmm_EMtrain(feas,gmix,t); /* Compute one iteration of EM.    */
+			llh=gmm_EMtrain(feas,gmix,t); /* Compute one iteration of EM algorithm.   */
 			fprintf(stdout,"Iteration: %05i    Improvement: %3i%c    LogLikelihood: %.3f\n",
-				i,abs(round(-100*(llh-last)/last)),'%',llh); /* Show the EM results.   */
-			if(last-llh>-sigma||isnan(last-llh))break; /* Break with sigma threshold.  */
+				i,abs(round(-100*(llh-last)/last)),'%',llh); /* Show the EM results.  */
+			if(last-llh>-sigma||isnan(last-llh))break; /* Break with sigma threshold. */
 			last=llh;
 		}
 		x=gmix->num;
-		if(m<1.0){
+		if(m>=0){
 			mergelist *mlst=gmm_merge_list(feas,gmix,m);
 			gmix=gmm_merge(gmix,mlst);
 			gmm_merge_delete(mlst);
