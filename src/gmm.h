@@ -77,7 +77,7 @@ GNU General Public License for more details. */
 	decimal gmm_EMtrain(data*,gmm*,number);
 	void gmm_results_save(char*,cluster*);
 	void gmm_results_delete(cluster*);
-	mergelist *gmm_merge_list(data*,gmm*,decimal);
+	mergelist *gmm_merge_list(data*,gmm*,decimal,number);
 	gmm *gmm_merge(gmm*,mergelist*);
 	void gmm_merge_delete(mergelist*);
 

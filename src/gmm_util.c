@@ -43,28 +43,25 @@ gmm *gmm_merge(gmm *gmix,mergelist *mlst){
 }
 
 /* Obtain a merge list based on the similarity of two components. */
-mergelist *gmm_merge_list(data *feas,gmm *gmix,decimal u){
-	decimal x,prob,nmax; number n,m,i,j; u=log(u);
+mergelist *gmm_merge_list(data *feas,gmm *gmix,decimal u,number numthreads){
+	decimal x,prob,nmax,nort; number n,m,i,j;
 	mergelist *mlst=(mergelist*)calloc(1,sizeof(mergelist));
 	mlst->merge=(number*)calloc(mlst->inimix=gmix->num,sizeof(number));
 	mlst->value=(decimal*)calloc(mlst->endmix=gmix->num,sizeof(decimal));
 	decimal *norm=(decimal*)calloc(gmix->num,sizeof(decimal));
-	decimal *nort=(decimal*)calloc(feas->samples*2,sizeof(decimal)),*norb=nort+feas->samples;
-	gmm_init_classifier(gmix);
+	decimal *norb=(decimal*)calloc(feas->samples,sizeof(decimal));
+	gmm_init_classifier(gmix); u=log(u);
 	for(m=0;m<gmix->num;m++){ /* Precalculate the normalization part once. */
-		nmax=-HUGE_VAL;
+		norm[m]=-HUGE_VAL;
 		for(i=0;i<feas->samples;i++){
 			prob=gmix->mix[m].cgauss;
 			for(j=0;j<gmix->dimension;j++){
 				x=feas->data[i][j]-gmix->mix[m].mean[j];
 				prob-=(x*x)*gmix->mix[m].dcov[j];
 			}
-			nort[i]=(prob+prob)*0.5;
-			nmax=nmax>nort[i]?nmax:nort[i];
+			nort=(prob+prob)*0.5;
+			norm[m]=norm[m]>nort?norm[m]:nort;
 		}
-		for(i=0;i<feas->samples;i++) /* Robust computing of the features sum. */
-			norm[m]+=exp(nort[i]-nmax);
-		norm[m]=nmax+log(norm[m]);
 	}
 	for(m=0;m<gmix->num-1;m++){
 		if(mlst->merge[m]==-1)continue; /* Skip components that will be merged. */
@@ -85,13 +82,10 @@ mergelist *gmm_merge_list(data *feas,gmm *gmix,decimal u){
 					x=feas->data[i][j]-gmix->mix[n].mean[j];
 					prob-=(x*x)*gmix->mix[n].dcov[j];
 				}
-				nort[i]=(norb[i]+prob)*0.5;
-				nmax=nmax>nort[i]?nmax:nort[i];
+				nort=(norb[i]+prob)*0.5;
+				nmax=nmax>nort?nmax:nort;
 			}
-			for(prob=0,i=0;i<feas->samples;i++) /* Robust computing of the features sum. */
-				prob+=exp(nort[i]-nmax);
-			prob=nmax+log(prob);
-			prob=((prob+prob)-(norm[m]+norm[n]))*0.5; /* Similarity between n and m. */
+			prob=((nmax+nmax)-(norm[m]+norm[n]))*0.5; /* Similarity between n and m. */
 			if(prob>u){
 				mlst->merge[m]=n,mlst->merge[n]=-1;
 				mlst->value[m]=prob,mlst->endmix--;
@@ -100,7 +94,7 @@ mergelist *gmm_merge_list(data *feas,gmm *gmix,decimal u){
 		}
 	}
 	gmm_init_classifier(gmix);
-	free(norm); free(nort);
+	free(norm); free(norb);
 	return mlst;
 }
 
