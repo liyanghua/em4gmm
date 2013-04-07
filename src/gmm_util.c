@@ -44,12 +44,12 @@ gmm *gmm_merge(gmm *gmix,mergelist *mlst){
 
 /* Obtain a merge list based on the similarity of two components. */
 mergelist *gmm_merge_list(data *feas,gmm *gmix,decimal u,number numthreads){
-	decimal x,prob,nmax,nort; number n,m,i,j;
 	mergelist *mlst=(mergelist*)calloc(1,sizeof(mergelist));
 	mlst->merge=(number*)calloc(mlst->inimix=gmix->num,sizeof(number));
 	mlst->value=(decimal*)calloc(mlst->endmix=gmix->num,sizeof(decimal));
 	decimal *norm=(decimal*)calloc(gmix->num,sizeof(decimal));
 	decimal *norb=(decimal*)calloc(feas->samples,sizeof(decimal));
+	decimal x,prob,nmax; number m,n,i,j;
 	gmm_init_classifier(gmix); u=log(u);
 	for(m=0;m<gmix->num;m++){ /* Precalculate the normalization part once. */
 		norm[m]=-HUGE_VAL;
@@ -59,19 +59,18 @@ mergelist *gmm_merge_list(data *feas,gmm *gmix,decimal u,number numthreads){
 				x=feas->data[i][j]-gmix->mix[m].mean[j];
 				prob-=(x*x)*gmix->mix[m].dcov[j];
 			}
-			nort=(prob+prob)*0.5;
-			norm[m]=norm[m]>nort?norm[m]:nort;
+			prob=(prob+prob)*0.5;
+			norm[m]=norm[m]>prob?norm[m]:prob;
 		}
 	}
 	for(m=0;m<gmix->num-1;m++){
 		if(mlst->merge[m]==-1)continue; /* Skip components that will be merged. */
 		for(i=0;i<feas->samples;i++){
-			prob=gmix->mix[m].cgauss;
+			norb[i]=gmix->mix[m].cgauss;
 			for(j=0;j<gmix->dimension;j++){
 				x=feas->data[i][j]-gmix->mix[m].mean[j];
-				prob-=(x*x)*gmix->mix[m].dcov[j];
+				norb[i]-=(x*x)*gmix->mix[m].dcov[j];
 			}
-			norb[i]=prob;
 		}
 		for(n=m+1;n<gmix->num;n++){
 			if(mlst->merge[n]==-1)continue; /* Skip components that will be merged. */
@@ -82,8 +81,8 @@ mergelist *gmm_merge_list(data *feas,gmm *gmix,decimal u,number numthreads){
 					x=feas->data[i][j]-gmix->mix[n].mean[j];
 					prob-=(x*x)*gmix->mix[n].dcov[j];
 				}
-				nort=(norb[i]+prob)*0.5;
-				nmax=nmax>nort?nmax:nort;
+				prob=(norb[i]+prob)*0.5;
+				nmax=nmax>prob?nmax:prob;
 			}
 			prob=((nmax+nmax)-(norm[m]+norm[n]))*0.5; /* Similarity between n and m. */
 			if(prob>u){
