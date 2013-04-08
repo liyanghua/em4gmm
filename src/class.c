@@ -36,7 +36,8 @@ void show_error(const char *message){
 
 /* Main execution of the classifier. */
 int main(int argc,char *argv[]){
-	number i,o,x=0,t=16; char *fnr=NULL,*fnf=NULL,*fnm=NULL,*fnw=NULL;
+	number i,o,x=0,t=sysconf(_SC_NPROCESSORS_ONLN);
+	char *fnr=NULL,*fnf=NULL,*fnm=NULL,*fnw=NULL;
 	while((o=getopt(argc,argv,"t:d:m:w:r:h"))!=-1){
 		switch(o){
 			case 't': t=atoi(optarg);

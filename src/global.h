@@ -20,6 +20,7 @@ GNU General Public License for more details. */
 	#include <math.h>
 	#include <string.h>
 	#include <getopt.h>
+	#include <unistd.h>
 	#include <pthread.h>
 	#include <zlib.h>
 

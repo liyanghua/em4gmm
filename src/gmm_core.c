@@ -15,6 +15,24 @@ GNU General Public License for more details. */
 #include "data.h"
 #include "gmm.h"
 
+typedef struct{
+	pthread_t thread; /* pthread identifier of the thread.   */
+	decimal result;   /* Variable to store the result found. */
+	data *feas;       /* Shared pointer to loaded samples.   */
+	gmm *gmix;        /* Shared pointer to gaussian mixture. */
+	gmm *gworld;      /* Shared pointer to gaussian mixture. */
+	number ini, end;  /* Initial and final sample processed. */
+	cluster *c;       /* The cluster of the data classified. */
+}classifier;
+
+typedef struct{
+	pthread_t thread;       /* pthread identifier of the thread.   */
+	pthread_mutex_t *mutex; /* Common mutex to lock shared data.   */
+	data *feas;             /* Shared pointer to loaded samples.   */
+	gmm *gmix;              /* Shared pointer to gaussian mixture. */
+	number ini, end;        /* Initial and final sample processed. */
+}trainer;
+
 /* Initialize the classifier by calculating the non-data dependant part. */
 void gmm_init_classifier(gmm *gmix){
 	decimal cache=gmix->dimension*(-0.5)*log(2*NUM_PI);

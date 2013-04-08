@@ -38,8 +38,8 @@ void show_error(const char *message){
 
 /* Main execution of the trainer. */
 int main(int argc,char *argv[]) {
-	number i,o,x=0,nmix=-1,imax=100,t=16; char *fnf=NULL,*fnm=NULL;
-	decimal last=INT_MIN,llh,sigma=0.1,m=-1.0;
+	number i,o,x=0,nmix=-1,imax=100,t=sysconf(_SC_NPROCESSORS_ONLN);
+	decimal last=INT_MIN,llh,sigma=0.1,m=-1.0; char *fnf=NULL,*fnm=NULL;
 	while((o=getopt(argc,argv,"u:t:i:d:m:n:s:h"))!=-1){
 		switch(o){
 			case 't': t=atoi(optarg);

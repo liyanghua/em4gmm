@@ -33,14 +33,6 @@ GNU General Public License for more details. */
 	}gmm;
 
 	typedef struct{
-		pthread_t thread;       /* pthread identifier of the thread.   */
-		pthread_mutex_t *mutex; /* Common mutex to lock shared data.   */
-		data *feas;             /* Shared pointer to loaded samples.   */
-		gmm *gmix;              /* Shared pointer to gaussian mixture. */
-		number ini, end;        /* Initial and final sample processed. */
-	}trainer;
-
-	typedef struct{
 		number samples;  /* Number of samples on the overall data.   */
 		number mixtures; /* Number of gaussian mixtures trained.     */
 		number *mix;     /* The class assigned for each data sample. */
@@ -48,16 +40,6 @@ GNU General Public License for more details. */
 		decimal *prob;   /* The maximum score for each data sample.  */
 		decimal result;  /* Variable to store the result computed.   */
 	}cluster;
-
-	typedef struct{
-		pthread_t thread; /* pthread identifier of the thread.   */
-		decimal result;   /* Variable to store the result found. */
-		data *feas;       /* Shared pointer to loaded samples.   */
-		gmm *gmix;        /* Shared pointer to gaussian mixture. */
-		gmm *gworld;      /* Shared pointer to gaussian mixture. */
-		number ini, end;  /* Initial and final sample processed. */
-		cluster *c;       /* The cluster of the data classified. */
-	}classifier;
 
 	typedef struct{
 		number inimix;  /* The initial number of mixture components.  */
