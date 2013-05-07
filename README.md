@@ -14,8 +14,8 @@ Download
 * [Download the latest release of the source code on a zip file](https://github.com/juandavm/em4gmm/zipball/master).
 * Clone the repository: `git clone git://github.com/juandavm/em4gmm.git`
 
-Compiling
----------
+Installing
+----------
 
 In order to compile this program, you need first compile and install the [zlib library](http://www.zlib.net) from their website, or using your preferred software distribution channels (aptitude, yum, macports, etc) in order to install it (with the dev packages). On some systems this library can be installed by default.
 
@@ -23,74 +23,14 @@ On Mac Os X and Linux distributions you can simple use the make command on the s
 
 Usage
 -----
-
-You can train a Gaussian Mixture Model using the gmmtrain utility on a feature train file. This will learn the Model from the provided data, and save it into a file. This are all the options that can be used with this utility:
-
-     Usage: gmmtrain <options>
-       Required:
-         -d file.txt|file.gz   file that contains all the samples vectors
-         -m file.gmm           file used to save the trained mixture model
-       Recommended:
-         -n 2-524228           optional number of components of the mixture
-       Optional:
-         -u 0.0-1.0            optional merge threshold based on similarity
-         -s 0.0-1.0            optional stop criterion based on likelihood
-         -i 1-10000            optional maximum number of EM iterations
-         -t 1-256              optional maximum number of threads used
-         -h                    optional argument that shows this message
-
-Using the special "-u" parameter you can activate the merge feature that will try to merge the similar components of the mixture, leaving the model as simple as possible, avoiding overtraining, and speeding up the classifier.
-
-Also, yo can obtain the score/loglikelihood of one feature test file (described below) using the gmmclass utility:
-
-     Usage: gmmclass <options>
-       Required:
-         -d file.txt|file.gz   file that contains the samples vectors
-         -m file.gmm           file of the trained model used to classify
-       Recommended:
-         -w file.gmm           optional world model used to smooth
-         -r file.json          optional file to save the classify log
-       Optional:
-         -t 1-128              optional maximum number of threads used
-         -h                    optional argument that shows this message
-
-The standard process is to train a model for each class, and then classify at the class with highest score.
-
-You also can obtain a detailed analysis of the classify process using the "-r" option on the gmmclass utility. This option lets you to know the component assigned to each sample, and the occupation of the components. This large report is usefull to do automatic clustering of some data on a predetermined number of clusters.
-
-Speed Results
--------------
-
-Compiling with GCC 4.5.4 on Mac Os X (2,66GHz Intel Core 2 Duo) with the included gzip compressed features (100000 samples of 10 dimensions of decimal values):
-
-     Mixtures     Training       Classify       Classify+WM
-     32           1.19s          0.12s          0.14s
-     64           2.25s          0.14s          0.22s
-     128          5.76s          0.22s          0.32s
-     256          15.31s         0.32s          0.61s
-     512          21.02s         0.61s          1.11s
-
-Data Files
-----------
-
-The data files used by this software are very simple. They are plain text files of decimal numbers, with a header, and one line per sample vector. This is an example of a very short data file:
-
-     11       4
-     1025     7706     6830     5571     4169     2858     1809     1094      688      500      417
-     1147     5755     6636     6234     4118     4593     2750     3649      774     1568     1104
-      932     5381     5567     5175     3613     3499     2429     2536      652      913      337
-      838     6401     5961     5277     4418     3468     2516     1644      921      391       74
-
-On the header, the first number are the dimension and the second the number of samples. The sample's vectors can be integers or decimals (using "." as separator), and the dimensions must be space-separated. Also, you have an example of a data file on the dat directory of this project.
-
-If you want to save disk space you can compress data files using gzip format (.gz file). A simple way to do this compression is using the gzip Linux or Mac Os X command.
+* [Download the last version of the user manual in pdf format](https://github.com/juandavm/em4gmm/blob/master/doc/UserManual.pdf?raw=true).
 
 Issues and Bugs
 ---------------
 Do you have a bug or a feature request? Do not worry, [open a new issue](https://github.com/juandavm/em4gmm/issues). But please, before opening any new issue, search on existing the yours in order to avoid duplicates. And thanks you for your contribution!
 
 Authors
-------
+-------
  * [Juan Daniel Valor Miró](http://www.juandaniel.es/).
 
 License
