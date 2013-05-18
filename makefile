@@ -34,6 +34,7 @@ all:
 	strip $(BIN)/gmmclass
 	chmod +x $(BIN)/gmmclass
 	$(BIN)/gmmclass -r $(DAT)/results.json.gz -d $(DAT)/data.gz -m $(DAT)/data.gmm -w $(DAT)/data.gmm
+	$(BIN)/gmmclass -d $(DAT)/data.gz -m $(DAT)/data.gmm -w $(DAT)/data.gmm
 	$(CC) $(CFLAGS) -fprofile-use $(ALL) $(SRC)/class.c -o $(BIN)/gmmclass -pthread -lz -lm
 	strip $(BIN)/gmmclass
 	chmod +x $(BIN)/gmmclass
