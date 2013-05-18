@@ -19,7 +19,7 @@ BINDIR := /usr/bin
 SRC := src
 BIN := bin
 DAT := dat
-ALL := $(SRC)/data.c $(SRC)/gmm_base.c $(SRC)/gmm_core.c $(SRC)/gmm_merge.c
+ALL := $(SRC)/data.c $(SRC)/gmm_base.c $(SRC)/gmm_class.c $(SRC)/gmm_train.c $(SRC)/gmm_merge.c
 
 all:
 	$(CC) $(CFLAGS) -fprofile-generate $(ALL) $(SRC)/train.c -o $(BIN)/gmmtrain -pthread -lz -lm
@@ -33,7 +33,7 @@ all:
 	$(CC) $(CFLAGS) -fprofile-generate $(ALL) $(SRC)/class.c -o $(BIN)/gmmclass -pthread -lz -lm
 	strip $(BIN)/gmmclass
 	chmod +x $(BIN)/gmmclass
-	$(BIN)/gmmclass -r $(DAT)/results.json -d $(DAT)/data.gz -m $(DAT)/data.gmm -w $(DAT)/data.gmm
+	$(BIN)/gmmclass -r $(DAT)/results.json.gz -d $(DAT)/data.gz -m $(DAT)/data.gmm -w $(DAT)/data.gmm
 	$(CC) $(CFLAGS) -fprofile-use $(ALL) $(SRC)/class.c -o $(BIN)/gmmclass -pthread -lz -lm
 	strip $(BIN)/gmmclass
 	chmod +x $(BIN)/gmmclass

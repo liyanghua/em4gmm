@@ -23,7 +23,7 @@ void show_help(char *filename){
 	fprintf(stderr,"    -m file.gmm           file of the trained model used to classify\n");
 	fprintf(stderr,"  Recommended:\n");
 	fprintf(stderr,"    -w file.gmm           optional world model used to smooth\n");
-	fprintf(stderr,"    -r file.json          optional file to save the classify log\n");
+	fprintf(stderr,"    -r file.json.gz       optional file to save the log (slower)\n");
 	fprintf(stderr,"  Optional:\n");
 	fprintf(stderr,"    -t 1-256              optional maximum number of threads used\n");
 	fprintf(stderr,"    -h                    optional argument that shows this message\n");
@@ -55,12 +55,17 @@ int main(int argc,char *argv[]){
 	gmm *gmix=NULL,*gworld=NULL;
 	if(fnw!=NULL)gworld=gmm_load(fnw); /* Load world model if is defined.  */
 	gmix=gmm_load(fnm);
-	cluster *c=gmm_classify(feas,gmix,gworld,t);
+	if(fnr!=NULL){
+		cluster *c=gmm_classify(feas,gmix,gworld,t);
+		fprintf(stdout,"Score: %.10f\n",c->result);
+		gmm_results_save(fnr,c); /* Save jSON log if is defined.  */
+		gmm_results_delete(c);
+	}else{
+		decimal result=gmm_simple_classify(feas,gmix,gworld,t);
+		fprintf(stdout,"Score: %.10f\n",result);
+	}
 	gmm_delete(gmix);
 	if(gworld!=NULL)gmm_delete(gworld);
-	fprintf(stdout,"Score: %.10f\n",c->result);
-	if(fnr!=NULL)gmm_results_save(fnr,c); /* Save jSON log if is defined.  */
-	gmm_results_delete(c);
 	feas_delete(feas);
 	return 0;
 }

@@ -99,21 +99,24 @@ void gmm_delete(gmm *gmix){
 
 /* Save the classifier log as a jSON file. */
 void gmm_results_save(char *filename,cluster *c){
-	number i; FILE *f=fopen(filename,"w");
+	number i,j; gzFile f=gzopen(filename,"wb");
 	if(!f)fprintf(stderr,"Error: Can not write to %s file.\n",filename),exit(1);
-	fprintf(f,"{\n\t\"global_score\": %.10f,",c->result);
-	fprintf(f,"\n\t\"samples\": %i,\n\t\"mixtures\": %i,",c->samples,c->mixtures);
-	fprintf(f,"\n\t\"mixture_occupation\": [ %i",c->freq[0]);
+	gzprintf(f,"{\n\t\"global_score\": %.10f,",c->result);
+	gzprintf(f,"\n\t\"samples\": %i,\n\t\"classes\": %i,",c->samples,c->mixtures);
+	gzprintf(f,"\n\t\"class_occupation\": [ %i",c->freq[0]);
 	for(i=1;i<c->mixtures;i++)
-		fprintf(f,", %i",c->freq[i]);
-	fprintf(f," ],\n\t\"samples_classification\": [ %i",c->mix[0]);
-	for(i=1;i<c->samples;i++)
-		fprintf(f,", %i",c->mix[i]);
-	fprintf(f," ],\n\t\"samples_score\": [ %.10f",c->prob[0]);
-	for(i=1;i<c->samples;i++)
-		fprintf(f,", %.10f",c->prob[i]);
-	fprintf(f," ]\n}");
-	fclose(f);
+		gzprintf(f,", %i",c->freq[i]);
+	gzprintf(f," ],\n\t\"samples_results\": [ ");
+	for(i=0;i<c->samples;i++){
+		gzprintf(f,"\n\t\t { \"sample\": %i, \"class\": %i, ",i,c->mix[i]);
+		gzprintf(f,"\"lprob\": [ %.10f",c->prob[i*c->mixtures]);
+		for(j=1;j<c->mixtures;j++)
+			gzprintf(f,", %.10f",c->prob[i*c->mixtures+j]);
+		if(i==c->samples-1) gzprintf(f," ] }");
+		else gzprintf(f," ] },");
+	}
+	gzprintf(f,"\n\t]\n}");
+	gzclose(f);
 }
 
 /* Free the allocated memory of the classifier results. */

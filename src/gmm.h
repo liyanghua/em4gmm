@@ -56,6 +56,7 @@ GNU General Public License for more details. */
 	void gmm_delete(gmm*);
 	void gmm_init_classifier(gmm*);
 	cluster *gmm_classify(data*,gmm*,gmm*,number);
+	decimal gmm_simple_classify(data*,gmm*,gmm*,number);
 	decimal gmm_EMtrain(data*,gmm*,number);
 	void gmm_results_save(char*,cluster*);
 	void gmm_results_delete(cluster*);
