@@ -66,7 +66,10 @@ int main(int argc,char *argv[]) {
 	}
 	if(x<2)show_help(argv[0]),exit(1); /* Test if exists all the needed arguments. */
 	data *feas=feas_load(fnf); /* Load the features from the specified disc file.  */
-	nmix=(nmix==-1)?sqrt(feas->samples/2):nmix;
+	if(nmix==-1){
+		if(m<0)m=0.95;
+		nmix=sqrt(feas->samples/2);
+	}
 	gmm *gmix=gmm_initialize(feas,nmix); /* Good GMM initialization using data.    */
 	for(o=1;o<=imax;o++){
 		for(i=1;i<=imax;i++){

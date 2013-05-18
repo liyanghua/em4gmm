@@ -99,7 +99,7 @@ void gmm_model_save(char *filename,gmm *gmix){
 		gzprintf(f,", %.10f",gmix->mcov[j]);
 	gzprintf(f," ],\n\t\"model\": [ ");
 	for(m=0;m<gmix->num;m++){
-		gzprintf(f,"\n\t\t { \"class\": %i, \"prior\": %.10f, ",m,gmix->mix[m].prior);
+		gzprintf(f,"\n\t\t { \"class\": %i, \"lprior\": %.10f, ",m,gmix->mix[m].prior);
 		gzprintf(f,"\"means\": [ %.10f",gmix->mix[m].mean[0]);
 		for(j=1;j<gmix->dimension;j++)
 			gzprintf(f,", %.10f",gmix->mix[m].mean[j]);
