@@ -23,6 +23,7 @@ void show_help(char *filename){
 	fprintf(stderr,"    -m file.gmm           file used to save the trained mixture model\n");
 	fprintf(stderr,"  Recommended:\n");
 	fprintf(stderr,"    -n 2-524228           optional number of components of the mixture\n");
+	fprintf(stderr,"    -r file.json.gz       optional file to save the log (not the model)\n");
 	fprintf(stderr,"  Optional:\n");
 	fprintf(stderr,"    -u 0.0-1.0            optional merge threshold based on similarity\n");
 	fprintf(stderr,"    -s 0.0-1.0            optional stop criterion based on likelihood\n");
@@ -39,8 +40,8 @@ void show_error(const char *message){
 /* Main execution of the trainer. */
 int main(int argc,char *argv[]) {
 	number i,o,x=0,nmix=-1,imax=100,t=sysconf(_SC_NPROCESSORS_ONLN);
-	decimal last=INT_MIN,llh,sigma=0.01,m=-1.0; char *fnf=NULL,*fnm=NULL;
-	while((o=getopt(argc,argv,"u:t:i:d:m:n:s:h"))!=-1){
+	decimal last=INT_MIN,llh,sigma=0.01,m=-1.0; char *fnf=NULL,*fnm=NULL,*fnr=NULL;
+	while((o=getopt(argc,argv,"r:u:t:i:d:m:n:s:h"))!=-1){
 		switch(o){
 			case 't': t=atoi(optarg);
 				if(t>256||t<1)show_error("Number of threads must be on the 1-256 range");
@@ -53,6 +54,7 @@ int main(int argc,char *argv[]) {
 				break;
 			case 'd': fnf=optarg,x++; break;
 			case 'm': fnm=optarg,x++; break;
+			case 'r': fnr=optarg; break;
 			case 'u': m=atof(optarg);
 				if(m>1.0||m<0.0)show_error("Merge threshold must be on the 0.0-1.0 range");
 				break;
@@ -85,6 +87,7 @@ int main(int argc,char *argv[]) {
 		last=INT_MIN;
 	}
 	feas_delete(feas);
+	if(fnr!=NULL)gmm_model_save(fnr,gmix);
 	gmm_init_classifier(gmix); /* Pre-compute the non-data dependant part of classifier. */
 	gmm_save(fnm,gmix); /* Save the model with the pre-computed part for fast classify.  */
 	gmm_delete(gmix);

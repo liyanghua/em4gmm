@@ -60,6 +60,7 @@ GNU General Public License for more details. */
 	decimal gmm_EMtrain(data*,gmm*,number);
 	void gmm_results_save(char*,cluster*);
 	void gmm_results_delete(cluster*);
+	void gmm_model_save(char*,gmm*);
 	mergelist *gmm_merge_list(data*,gmm*,decimal,number);
 	gmm *gmm_merge(gmm*,mergelist*);
 	void gmm_merge_delete(mergelist*);

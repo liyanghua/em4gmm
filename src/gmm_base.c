@@ -88,6 +88,31 @@ void gmm_save(char *filename,gmm *gmix){
 	fclose(f);
 }
 
+/* Save the trained model as a jSON log file (not usable). */
+void gmm_model_save(char *filename,gmm *gmix){
+	number m,j; gzFile f=gzopen(filename,"wb");
+	if(!f)fprintf(stderr,"Error: Can not write to %s file.\n",filename),exit(1);
+	gzprintf(f,"{\n\t\"dimension\": %i,",gmix->dimension);
+	gzprintf(f,"\n\t\"classes\": %i,",gmix->num);
+	gzprintf(f,"\n\t\"minimum_dcov\": [ %.10f",gmix->mcov[0]);
+	for(j=1;j<gmix->dimension;j++)
+		gzprintf(f,", %.10f",gmix->mcov[j]);
+	gzprintf(f," ],\n\t\"model\": [ ");
+	for(m=0;m<gmix->num;m++){
+		gzprintf(f,"\n\t\t { \"class\": %i, \"prior\": %.10f, ",m,gmix->mix[m].prior);
+		gzprintf(f,"\"means\": [ %.10f",gmix->mix[m].mean[0]);
+		for(j=1;j<gmix->dimension;j++)
+			gzprintf(f,", %.10f",gmix->mix[m].mean[j]);
+		gzprintf(f," ], \"dcov\": [ %.10f",gmix->mix[m].dcov[0]);
+		for(j=1;j<gmix->dimension;j++)
+			gzprintf(f,", %.10f",gmix->mix[m].dcov[j]);
+		if(m==gmix->num-1)gzprintf(f," ] }");
+		else gzprintf(f," ] },");
+	}
+	gzprintf(f,"\n\t]\n}");
+	gzclose(f);
+}
+
 /* Free the allocated memory of the Gaussian Mixture. */
 void gmm_delete(gmm *gmix){
 	number i;
@@ -112,7 +137,7 @@ void gmm_results_save(char *filename,cluster *c){
 		gzprintf(f,"\"lprob\": [ %.10f",c->prob[i*c->mixtures]);
 		for(j=1;j<c->mixtures;j++)
 			gzprintf(f,", %.10f",c->prob[i*c->mixtures+j]);
-		if(i==c->samples-1) gzprintf(f," ] }");
+		if(i==c->samples-1)gzprintf(f," ] }");
 		else gzprintf(f," ] },");
 	}
 	gzprintf(f,"\n\t]\n}");

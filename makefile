@@ -25,7 +25,7 @@ all:
 	$(CC) $(CFLAGS) -fprofile-generate $(ALL) $(SRC)/train.c -o $(BIN)/gmmtrain -pthread -lz -lm
 	strip $(BIN)/gmmtrain
 	chmod +x $(BIN)/gmmtrain
-	$(BIN)/gmmtrain -d $(DAT)/data.gz -m $(DAT)/data.gmm -n 128 -s 0.1 -u 0.9
+	$(BIN)/gmmtrain -d $(DAT)/data.gz -m $(DAT)/data.gmm -n 128 -s 0.1 -u 0.9 -r $(DAT)/train.json.gz
 	$(CC) $(CFLAGS) -fprofile-use $(ALL) $(SRC)/train.c -o $(BIN)/gmmtrain -pthread -lz -lm
 	strip $(BIN)/gmmtrain
 	chmod +x $(BIN)/gmmtrain
@@ -33,7 +33,7 @@ all:
 	$(CC) $(CFLAGS) -fprofile-generate $(ALL) $(SRC)/class.c -o $(BIN)/gmmclass -pthread -lz -lm
 	strip $(BIN)/gmmclass
 	chmod +x $(BIN)/gmmclass
-	$(BIN)/gmmclass -r $(DAT)/results.json.gz -d $(DAT)/data.gz -m $(DAT)/data.gmm -w $(DAT)/data.gmm
+	$(BIN)/gmmclass -r $(DAT)/class.json.gz -d $(DAT)/data.gz -m $(DAT)/data.gmm -w $(DAT)/data.gmm
 	$(BIN)/gmmclass -d $(DAT)/data.gz -m $(DAT)/data.gmm -w $(DAT)/data.gmm
 	$(CC) $(CFLAGS) -fprofile-use $(ALL) $(SRC)/class.c -o $(BIN)/gmmclass -pthread -lz -lm
 	strip $(BIN)/gmmclass
