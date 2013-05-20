@@ -22,6 +22,7 @@ GNU General Public License for more details. */
 		decimal *_mean; /* Counts to estimate the future parameter (used by EM). */
 		decimal *_dcov; /* Counts to estimate the future parameter (used by EM). */
 		decimal _z;     /* Counts to estimate the future parameter (used by EM). */
+		number freq;    /* Number of samples that classify at this component.    */
 	}gauss;
 
 	typedef struct{
@@ -49,7 +50,7 @@ GNU General Public License for more details. */
 	decimal gmm_classify(char*,data*,gmm*,gmm*,number);
 	decimal gmm_simple_classify(data*,gmm*,gmm*,number);
 	decimal gmm_EMtrain(data*,gmm*,number);
-	void gmm_model_save(char*,gmm*);
+	void gmm_save_log(char*,gmm*);
 	mergelist *gmm_merge_list(data*,gmm*,decimal,number);
 	gmm *gmm_merge(gmm*,mergelist*);
 	void gmm_merge_delete(mergelist*);

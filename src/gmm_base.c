@@ -89,7 +89,7 @@ void gmm_save(char *filename,gmm *gmix){
 }
 
 /* Save the trained model as a jSON log file (not usable). */
-void gmm_model_save(char *filename,gmm *gmix){
+void gmm_save_log(char *filename,gmm *gmix){
 	number m,j; FILE *f=fopen(filename,"w");
 	if(!f)fprintf(stderr,"Error: Can not write to %s file.\n",filename),exit(1);
 	fprintf(f,"{\n\t\"dimension\": %i,",gmix->dimension);

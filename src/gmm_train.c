@@ -29,10 +29,11 @@ void *thread_trainer(void *tdata){
 	gmm *gmix=t->gmix; data *feas=t->feas;
 	decimal *zval=(decimal*)calloc(2*gmix->num,sizeof(decimal)),*prob=zval+gmix->num;
 	decimal *mean=(decimal*)calloc(2*gmix->num*gmix->dimension,sizeof(decimal));
-	decimal *dcov=mean+(gmix->num*gmix->dimension),llh=0,x,tz,rmean,maximum;
-	number i,j,m,inc;
+	decimal *dcov=mean+(gmix->num*gmix->dimension),llh=0,x,tz,rmean,maximum,tmpd;
+	number *tfreq=(number*)calloc(gmix->num,sizeof(number));
+	number i,j,m,inc,c; decimal mepsilon=log(DBL_EPSILON);
 	for(i=t->ini;i<t->end;i++){
-		maximum=-HUGE_VAL;
+		maximum=-HUGE_VAL,c=-1;
 		for(m=0;m<gmix->num;m++){ /* Compute expected class value of the sample. */
 			prob[m]=gmix->mix[m].cgauss;
 			for(j=0;j<gmix->dimension;j++){
@@ -40,16 +41,21 @@ void *thread_trainer(void *tdata){
 				prob[m]-=(x*x)*gmix->mix[m].dcov[j];
 			}
 			prob[m]*=0.5;
-			maximum=maximum>prob[m]?maximum:prob[m];
+			if(maximum<prob[m])maximum=prob[m],c=m;
 		}
-		for(m=0,x=0;m<gmix->num;m++) /* Do not use Viterbi aproximation. */
-			x+=exp(prob[m]-maximum);
-		llh+=(rmean=maximum+log(x));
+		for(m=0,x=0;m<gmix->num;m++){ /* Do not use Viterbi aproximation. */
+			tmpd=prob[m]-maximum;
+			if(tmpd>mepsilon)x+=exp(tmpd); /* Use machine epsilon to avoid make exp's. */
+		}
+		llh+=(rmean=maximum+log(x)); tfreq[c]++;
 		for(m=0;m<gmix->num;m++){ /* Accumulate counts of the sample in memory. */
-			zval[m]+=(tz=exp(prob[m]-rmean)); inc=m*j;
-			for(j=0;j<gmix->dimension;j++){
-				mean[inc+j]+=(x=tz*feas->data[i][j]);
-				dcov[inc+j]+=x*feas->data[i][j];
+			tmpd=prob[m]-rmean;
+			if(tmpd>mepsilon){ /* Use machine epsilon to avoid this step. */
+				zval[m]+=(tz=exp(tmpd)); inc=m*j;
+				for(j=0;j<gmix->dimension;j++){
+					mean[inc+j]+=(x=tz*feas->data[i][j]);
+					dcov[inc+j]+=x*feas->data[i][j];
+				}
 			}
 		}
 	}
@@ -57,6 +63,7 @@ void *thread_trainer(void *tdata){
 	gmix->llh+=llh;
 	for(m=0;m<gmix->num;m++){
 		gmix->mix[m]._z+=zval[m]; inc=m*j;
+		gmix->mix[m].freq+=tfreq[m];
 		for(j=0;j<gmix->dimension;j++){
 			gmix->mix[m]._mean[j]+=mean[inc+j];
 			gmix->mix[m]._dcov[j]+=dcov[inc+j];
@@ -73,6 +80,7 @@ decimal gmm_EMtrain(data *feas,gmm *gmix,number numthreads){
 	number m,i,inc; decimal tz,x;
 	/* Calculate expected value and accumulate the counts (E Step). */
 	gmm_init_classifier(gmix);
+	for(m=0;m<gmix->num;m++)gmix->mix[m].freq=0;
 	pthread_mutex_init(mutex,NULL);
 	inc=feas->samples/numthreads;
 	for(i=0;i<numthreads;i++){ /* Set and launch the parallel training. */

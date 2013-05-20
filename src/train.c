@@ -90,7 +90,7 @@ int main(int argc,char *argv[]) {
 		last=INT_MIN;
 	}
 	feas_delete(feas);
-	if(fnr!=NULL)gmm_model_save(fnr,gmix);
+	if(fnr!=NULL)gmm_save_log(fnr,gmix);
 	gmm_init_classifier(gmix); /* Pre-compute the non-data dependant part of classifier. */
 	gmm_save(fnm,gmix); /* Save the model with the pre-computed part for fast classify.  */
 	gmm_delete(gmix);
