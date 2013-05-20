@@ -17,6 +17,7 @@ GNU General Public License for more details. */
 	#include <stdio.h>
 	#include <stdlib.h>
 	#include <limits.h>
+	#include <float.h>
 	#include <math.h>
 	#include <string.h>
 	#include <getopt.h>

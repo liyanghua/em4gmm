@@ -23,7 +23,7 @@ void show_help(char *filename){
 	fprintf(stderr,"    -m file.gmm           file used to save the trained mixture model\n");
 	fprintf(stderr,"  Recommended:\n");
 	fprintf(stderr,"    -n 2-524228           optional number of components of the mixture\n");
-	fprintf(stderr,"    -r file.json.gz       optional file to save the log (not the model)\n");
+	fprintf(stderr,"    -r file.json          optional file to save the log (not the model)\n");
 	fprintf(stderr,"  Optional:\n");
 	fprintf(stderr,"    -u 0.0-1.0            optional merge threshold based on similarity\n");
 	fprintf(stderr,"    -s 0.0-1.0            optional stop criterion based on likelihood\n");

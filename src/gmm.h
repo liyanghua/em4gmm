@@ -33,15 +33,6 @@ GNU General Public License for more details. */
 	}gmm;
 
 	typedef struct{
-		number samples;  /* Number of samples on the overall data.   */
-		number mixtures; /* Number of gaussian mixtures trained.     */
-		number *mix;     /* The class assigned for each data sample. */
-		number *freq;    /* The number of samples in each mixture.   */
-		decimal *prob;   /* The maximum score for each data sample.  */
-		decimal result;  /* Variable to store the result computed.   */
-	}cluster;
-
-	typedef struct{
 		number inimix;  /* The initial number of mixture components.  */
 		number endmix;  /* The final number of mixture components.    */
 		number *merge;  /* An index vector for the merged components. */
@@ -55,11 +46,9 @@ GNU General Public License for more details. */
 	gmm *gmm_initialize(data*,number);
 	void gmm_delete(gmm*);
 	void gmm_init_classifier(gmm*);
-	cluster *gmm_classify(data*,gmm*,gmm*,number);
+	decimal gmm_classify(char*,data*,gmm*,gmm*,number);
 	decimal gmm_simple_classify(data*,gmm*,gmm*,number);
 	decimal gmm_EMtrain(data*,gmm*,number);
-	void gmm_results_save(char*,cluster*);
-	void gmm_results_delete(cluster*);
 	void gmm_model_save(char*,gmm*);
 	mergelist *gmm_merge_list(data*,gmm*,decimal,number);
 	gmm *gmm_merge(gmm*,mergelist*);

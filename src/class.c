@@ -23,7 +23,7 @@ void show_help(char *filename){
 	fprintf(stderr,"    -m file.gmm           file of the trained model used to classify\n");
 	fprintf(stderr,"  Recommended:\n");
 	fprintf(stderr,"    -w file.gmm           optional world model used to smooth\n");
-	fprintf(stderr,"    -r file.json.gz       optional file to save the log (slower)\n");
+	fprintf(stderr,"    -r file.json          optional file to save the log (slower)\n");
 	fprintf(stderr,"  Optional:\n");
 	fprintf(stderr,"    -t 1-256              optional maximum number of threads used\n");
 	fprintf(stderr,"    -h                    optional argument that shows this message\n");
@@ -36,7 +36,7 @@ void show_error(const char *message){
 
 /* Main execution of the classifier. */
 int main(int argc,char *argv[]){
-	number i,o,x=0,t=sysconf(_SC_NPROCESSORS_ONLN);
+	number i,o,x=0,t=sysconf(_SC_NPROCESSORS_ONLN); decimal result;
 	char *fnr=NULL,*fnf=NULL,*fnm=NULL,*fnw=NULL;
 	while((o=getopt(argc,argv,"t:d:m:w:r:h"))!=-1){
 		switch(o){
@@ -55,15 +55,9 @@ int main(int argc,char *argv[]){
 	gmm *gmix=NULL,*gworld=NULL;
 	if(fnw!=NULL)gworld=gmm_load(fnw); /* Load world model if is defined.  */
 	gmix=gmm_load(fnm);
-	if(fnr!=NULL){
-		cluster *c=gmm_classify(feas,gmix,gworld,t);
-		fprintf(stdout,"Score: %.10f\n",c->result);
-		gmm_results_save(fnr,c); /* Save jSON log if is defined.  */
-		gmm_results_delete(c);
-	}else{
-		decimal result=gmm_simple_classify(feas,gmix,gworld,t);
-		fprintf(stdout,"Score: %.10f\n",result);
-	}
+	if(fnr!=NULL)result=gmm_classify(fnr,feas,gmix,gworld,t);
+	else result=gmm_simple_classify(feas,gmix,gworld,t);
+	fprintf(stdout,"Score: %.10f\n",result);
 	gmm_delete(gmix);
 	if(gworld!=NULL)gmm_delete(gworld);
 	feas_delete(feas);
