@@ -61,7 +61,7 @@ gmm *gmm_merge(gmm *gmix,mergelist *mlst){
 void *thread_merger(void *tdata){
 	merger *t=(merger*)tdata;
 	decimal *norb=(decimal*)calloc(t->feas->samples,sizeof(decimal));
-	decimal x,prob,nmax; number m,n,i,j;
+	decimal x,prob,nmax,mdiv; number m,n,i,j;
 	for(m=t->ini;m<t->gmix->num;m+=t->num){ /* Precalculate the normalization part once. */
 		t->norm[m]=-HUGE_VAL;
 		for(i=0;i<t->feas->samples;i++){
@@ -87,8 +87,9 @@ void *thread_merger(void *tdata){
 			}
 		}
 		for(n=m+1;n<t->gmix->num;n++){ /* Similarity only with the next components. */
-			nmax=-HUGE_VAL;
+			nmax=-HUGE_VAL,mdiv=t->norm[m]+t->norm[n];
 			for(i=0;i<t->feas->samples;i++){
+				if(norb[i]-mdiv<t->u)continue; /* Continue if we not pass the threshold. */
 				prob=t->gmix->mix[n].cgauss;
 				for(j=0;j<t->gmix->dimension;j++){
 					x=t->feas->data[i][j]-t->gmix->mix[n].mean[j];
@@ -97,7 +98,7 @@ void *thread_merger(void *tdata){
 				prob=(norb[i]+prob)*0.5;
 				nmax=nmax>prob?nmax:prob;
 			}
-			prob=((nmax+nmax)-(t->norm[m]+t->norm[n]))*0.5; /* Similarity between n and m. */
+			prob=((nmax+nmax)-mdiv)*0.5; /* Similarity between n and m. */
 			if(prob>t->u){
 				t->mlst->merge[m]=n,t->mlst->value[m]=prob;
 				break;

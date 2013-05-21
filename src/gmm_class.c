@@ -115,7 +115,7 @@ void *thread_classifier(void *tdata){
 			max1-=(x*x)*t->gmix->mix[0].dcov[j];
 		}
 		snprintf(buffer,s,"%.10f",(max1-max2)*0.5);
-		for(m=0;m<t->gmix->num;m++){
+		for(m=1;m<t->gmix->num;m++){
 			prob=t->gmix->mix[m].cgauss; /* The precalculated non-data dependant part. */
 			for(j=0;j<t->gmix->dimension;j++){
 				x=t->feas->data[i][j]-t->gmix->mix[m].mean[j];
