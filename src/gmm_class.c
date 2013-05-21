@@ -52,6 +52,7 @@ void *thread_simple_classifier(void *tdata){
 			max=-HUGE_VAL;
 			for(m=0;m<t->gworld->num;m++){
 				prob=t->gworld->mix[m].cgauss;
+				if(prob<max)continue; /* Speed-up the classifier. */
 				for(j=0;j<t->gworld->dimension;j++){
 					x=t->feas->data[i][j]-t->gworld->mix[m].mean[j];
 					prob-=(x*x)*t->gworld->mix[m].dcov[j];
@@ -65,6 +66,7 @@ void *thread_simple_classifier(void *tdata){
 		max=-HUGE_VAL;
 		for(m=0;m<t->gmix->num;m++){
 			prob=t->gmix->mix[m].cgauss; /* The precalculated non-data dependant part. */
+			if(prob<max)continue; /* Speed-up the classifier. */
 			for(j=0;j<t->gmix->dimension;j++){
 				x=t->feas->data[i][j]-t->gmix->mix[m].mean[j];
 				prob-=(x*x)*t->gmix->mix[m].dcov[j];
@@ -101,6 +103,7 @@ void *thread_classifier(void *tdata){
 			max2=-HUGE_VAL;
 			for(m=0;m<t->gworld->num;m++){
 				prob=t->gworld->mix[m].cgauss;
+				if(prob<max2)continue; /* Speed-up the classifier. */
 				for(j=0;j<t->gworld->dimension;j++){
 					x=t->feas->data[i][j]-t->gworld->mix[m].mean[j];
 					prob-=(x*x)*t->gworld->mix[m].dcov[j];
