@@ -22,7 +22,7 @@ GNU General Public License for more details. */
 		decimal *_mean; /* Counts to estimate the future parameter (used by EM). */
 		decimal *_dcov; /* Counts to estimate the future parameter (used by EM). */
 		decimal _z;     /* Counts to estimate the future parameter (used by EM). */
-		number freq;    /* Number of samples that classify at this component.    */
+		number _cfreq;  /* Number of data samples classified on this component.  */
 	}gauss;
 
 	typedef struct{

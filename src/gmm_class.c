@@ -129,7 +129,7 @@ void *thread_classifier(void *tdata){
 		}
 		t->result+=(max1-max2)*0.5;
 		pthread_mutex_lock(t->mutex); /* Write the classifier log on the jSON file. */
-		t->gmix->mix[c].freq++;
+		t->gmix->mix[c]._cfreq++;
 		if(t->flag[0]==0){
 			fprintf(t->f,"\n\t\t{ \"sample\": %i, \"lprob\": [ %s ], \"class\": %i }",i,buffer,c);
 			t->flag[0]=1;
@@ -150,7 +150,7 @@ decimal gmm_classify(char *filename,data *feas,gmm *gmix,gmm *gworld,number numt
 	fprintf(f,"{\n\t\"samples\": %i,\n\t\"classes\": %i,",feas->samples,gmix->num);
 	fprintf(f,"\n\t\"samples_results\": [ ");
 	pthread_mutex_init(mutex,NULL);
-	for(i=0;i<gmix->num;i++)gmix->mix[i].freq=0;
+	for(i=0;i<gmix->num;i++)gmix->mix[i]._cfreq=0;
 	for(i=0;i<numthreads;i++){ /* Set and launch the parallel classify. */
 		t[i].feas=feas,t[i].gmix=gmix,t[i].gworld=gworld,t[i].ini=i*inc,t[i].mutex=mutex;
 		t[i].end=(i==numthreads-1)?(feas->samples):((i+1)*inc),t[i].f=f,t[i].flag=flag;
@@ -161,9 +161,9 @@ decimal gmm_classify(char *filename,data *feas,gmm *gmix,gmm *gworld,number numt
 		result+=t[i].result;
 	}
 	pthread_mutex_destroy(mutex);
-	fprintf(f,"\n\t],\n\t\"mixture_occupation\": [ %i",gmix->mix[0].freq);
+	fprintf(f,"\n\t],\n\t\"mixture_occupation\": [ %i",gmix->mix[0]._cfreq);
 	for(i=1;i<gmix->num;i++)
-		fprintf(f,", %i",gmix->mix[i].freq);
+		fprintf(f,", %i",gmix->mix[i]._cfreq);
 	fprintf(f," ],\n\t\"global_score\": %.10f\n}",result);
 	fclose(f);
 	return result/feas->samples;

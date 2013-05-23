@@ -36,7 +36,7 @@ gmm *gmm_merge(gmm *gmix,mergelist *mlst){
 		if(mlst->merge[m]>0){ /* If it is marked as merged, merge with the other. */
 			y=mlst->merge[m];
 			cloned->mix[m-p].prior=gmix->mix[m].prior+gmix->mix[y].prior;
-			cloned->mix[m-p].freq=gmix->mix[m].freq+gmix->mix[y].freq;
+			cloned->mix[m-p]._cfreq=gmix->mix[m]._cfreq+gmix->mix[y]._cfreq;
 			for(j=0;j<gmix->dimension;j++){
 				cloned->mix[m-p].mean[j]=(gmix->mix[m].mean[j]+gmix->mix[y].mean[j])*0.5;
 				cloned->mix[m-p].dcov[j]=(gmix->mix[m].dcov[j]+gmix->mix[y].dcov[j])*0.5;
@@ -44,7 +44,7 @@ gmm *gmm_merge(gmm *gmix,mergelist *mlst){
 		}else if(mlst->merge[m]==-1)p++; /* If it is marked as merged, skip it.  */
 		else if(mlst->merge[m]==0){ /* If it is not marked, copy on new mixture. */
 			cloned->mix[m-p].prior=gmix->mix[m].prior;
-			cloned->mix[m-p].freq=gmix->mix[m].freq;
+			cloned->mix[m-p]._cfreq=gmix->mix[m]._cfreq;
 			for(j=0;j<gmix->dimension;j++){
 				cloned->mix[m-p].mean[j]=gmix->mix[m].mean[j];
 				cloned->mix[m-p].dcov[j]=gmix->mix[m].dcov[j];
@@ -136,8 +136,7 @@ mergelist *gmm_merge_list(data *feas,gmm *gmix,decimal u,number numthreads){
 			else mlst->merge[n]=-1,mlst->value[n]=0,mlst->endmix--;
 		}
 		if(mlst->merge[m]==0) /* Delete unused components of the mixture. */
-			if(gmix->mix[m].freq<=1)
-				mlst->merge[m]=-1,mlst->value[m]=0,mlst->endmix--;
+			if(gmix->mix[m]._cfreq<=1)mlst->merge[m]=-1,mlst->value[m]=0,mlst->endmix--;
 	}
 	gmm_init_classifier(gmix);
 	pthread_mutex_destroy(mutex);
