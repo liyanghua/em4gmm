@@ -28,8 +28,8 @@ void *thread_trainer(void *tdata){
 	trainer *t=(trainer*)tdata; /* Get the data for the thread and alloc memory. */
 	gmm *gmix=t->gmix; data *feas=t->feas;
 	decimal *zval=(decimal*)calloc(2*gmix->num,sizeof(decimal)),*prob=zval+gmix->num;
-	decimal *mean=(decimal*)calloc(2*gmix->num*gmix->dimension,sizeof(decimal));
-	decimal *dcov=mean+(gmix->num*gmix->dimension),llh=0,x,tz,rmean,max,mep=log(DBL_EPSILON);
+	decimal *mean=(decimal*)calloc(2*gmix->num*gmix->dimension,sizeof(decimal)),llh=0;
+	decimal *dcov=mean+(gmix->num*gmix->dimension),x,tz,rmean,max,mep=log(DBL_EPSILON);
 	number *tfreq=(number*)calloc(gmix->num,sizeof(number)),i,j,m,inc,c;
 	for(i=t->ini;i<t->end;i++){
 		max=-HUGE_VAL,c=-1;
@@ -78,7 +78,8 @@ decimal gmm_EMtrain(data *feas,gmm *gmix,number numthreads){
 	number m,i,inc; decimal tz,x;
 	/* Calculate expected value and accumulate the counts (E Step). */
 	gmm_init_classifier(gmix);
-	for(m=0;m<gmix->num;m++)gmix->mix[m]._cfreq=0;
+	for(m=0;m<gmix->num;m++)
+		gmix->mix[m]._cfreq=0;
 	pthread_mutex_init(mutex,NULL);
 	inc=feas->samples/numthreads;
 	for(i=0;i<numthreads;i++){ /* Set and launch the parallel training. */
@@ -99,5 +100,6 @@ decimal gmm_EMtrain(data *feas,gmm *gmix,number numthreads){
 				gmix->mix[m].dcov[i]=gmix->mcov[i];
 		}
 	}
+	free(t);
 	return gmix->llh/feas->samples;
 }

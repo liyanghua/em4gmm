@@ -33,26 +33,18 @@ GNU General Public License for more details. */
 		decimal llh;      /* LogLikelihood after the training with EM algorithm. */
 	}gmm;
 
-	typedef struct{
-		number inimix;  /* The initial number of mixture components.  */
-		number endmix;  /* The final number of mixture components.    */
-		number *merge;  /* An index vector for the merged components. */
-		decimal *value; /* Similarity computed on the merge vector.   */
-	}mergelist;
-
-	/* Public functions prototypes to work with Gaussian Mixture Models. */
-	void gmm_save(char*,gmm*);
+	/* Public function prototypes to work with Gaussian Mixture Models. */
 	gmm *gmm_load(char*);
-	gmm *gmm_create(number,number);
 	gmm *gmm_initialize(data*,number);
+	void gmm_save(char*,gmm*);
+	void gmm_save_log(char*,gmm*);
 	void gmm_delete(gmm*);
-	void gmm_init_classifier(gmm*);
 	decimal gmm_classify(char*,data*,gmm*,gmm*,number);
 	decimal gmm_simple_classify(data*,gmm*,gmm*,number);
 	decimal gmm_EMtrain(data*,gmm*,number);
-	void gmm_save_log(char*,gmm*);
-	mergelist *gmm_merge_list(data*,gmm*,decimal,number);
-	gmm *gmm_merge(gmm*,mergelist*);
-	void gmm_merge_delete(mergelist*);
+	gmm *gmm_merge(gmm*,data*,decimal,number);
+	/* Private function prototypes to work with Gaussian Mixture Models. */
+	gmm *gmm_create(number,number);
+	void gmm_init_classifier(gmm*);
 
 #endif

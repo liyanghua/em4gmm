@@ -16,6 +16,13 @@ GNU General Public License for more details. */
 #include "gmm.h"
 
 typedef struct{
+	number inimix;  /* The initial number of mixture components.  */
+	number endmix;  /* The final number of mixture components.    */
+	number *merge;  /* An index vector for the merged components. */
+	decimal *value; /* Similarity computed on the merge vector.   */
+}mergelist;
+
+typedef struct{
 	pthread_t thread;       /* pthread identifier of the thread.   */
 	pthread_mutex_t *mutex; /* Variable needed to do the barrier.  */
 	pthread_cond_t *cond;   /* Variable needed to do the barrier.  */
@@ -29,11 +36,10 @@ typedef struct{
 }merger;
 
 /* Merge the components of one mixture based on the provided list. */
-gmm *gmm_merge(gmm *gmix,mergelist *mlst){
-	gmm *cloned=gmm_create(mlst->endmix,gmix->dimension);
-	number m,j,p=0,y;
+gmm *gmm_make_merge(gmm *gmix,mergelist *mlst){
+	gmm *cloned=gmm_create(mlst->endmix,gmix->dimension); number m,j,y,p=0;
 	for(m=0;m<gmix->num;m++){
-		if(mlst->merge[m]>0){ /* If it is marked as merged, merge with the other. */
+		if(mlst->merge[m]>0){ /* If it is marked to merge, merge with the other. */
 			y=mlst->merge[m];
 			cloned->mix[m-p].prior=gmix->mix[m].prior+gmix->mix[y].prior;
 			cloned->mix[m-p]._cfreq=gmix->mix[m]._cfreq+gmix->mix[y]._cfreq;
@@ -41,15 +47,14 @@ gmm *gmm_merge(gmm *gmix,mergelist *mlst){
 				cloned->mix[m-p].mean[j]=(gmix->mix[m].mean[j]+gmix->mix[y].mean[j])*0.5;
 				cloned->mix[m-p].dcov[j]=(gmix->mix[m].dcov[j]+gmix->mix[y].dcov[j])*0.5;
 			}
-		}else if(mlst->merge[m]==-1)p++; /* If it is marked as merged, skip it.  */
-		else if(mlst->merge[m]==0){ /* If it is not marked, copy on new mixture. */
+		}else if(mlst->merge[m]==0){ /* If it is not marked, copy on new mixture. */
 			cloned->mix[m-p].prior=gmix->mix[m].prior;
 			cloned->mix[m-p]._cfreq=gmix->mix[m]._cfreq;
 			for(j=0;j<gmix->dimension;j++){
 				cloned->mix[m-p].mean[j]=gmix->mix[m].mean[j];
 				cloned->mix[m-p].dcov[j]=gmix->mix[m].dcov[j];
 			}
-		}
+		}else if(mlst->merge[m]==-1)p++; /* If it is marked as merged, skip it. */
 	}
 	for(j=0;j<gmix->dimension;j++) /* Leave the minimum covariance as it. */
 		cloned->mcov[j]=gmix->mcov[j];
@@ -59,10 +64,10 @@ gmm *gmm_merge(gmm *gmix,mergelist *mlst){
 
 /* Parallel implementation of the similarity algorithm. */
 void *thread_merger(void *tdata){
-	merger *t=(merger*)tdata;
-	decimal *norb=(decimal*)calloc(t->feas->samples,sizeof(decimal));
-	decimal x,prob,nmax,mdiv; number m,n,i,j;
+	merger *t=(merger*)tdata; number m,n,i,j;
+	decimal *norb=(decimal*)calloc(t->feas->samples,sizeof(decimal)),x,prob,nmax,mdiv;
 	for(m=t->ini;m<t->gmix->num;m+=t->num){ /* Precalculate the normalization part once. */
+		if(t->gmix->mix[m]._cfreq<=1)continue; /* If it is unused, will be deleted. */
 		t->norm[m]=-HUGE_VAL;
 		for(i=0;i<t->feas->samples;i++){
 			prob=t->gmix->mix[m].cgauss;
@@ -79,6 +84,7 @@ void *thread_merger(void *tdata){
 	else pthread_cond_wait(t->cond,t->mutex);
 	pthread_mutex_unlock(t->mutex);
 	for(m=t->ini;m<(t->gmix->num-1);m+=t->num){ /* Fast calculate of the similarity. */
+		if(t->gmix->mix[m]._cfreq<=1)continue; /* If it is unused, will be deleted. */
 		for(i=0;i<t->feas->samples;i++){
 			norb[i]=t->gmix->mix[m].cgauss;
 			for(j=0;j<t->gmix->dimension;j++){
@@ -87,6 +93,7 @@ void *thread_merger(void *tdata){
 			}
 		}
 		for(n=m+1;n<t->gmix->num;n++){ /* Similarity only with the next components. */
+			if(t->gmix->mix[n]._cfreq<=1)continue; /* If it is unused, will be deleted. */
 			nmax=-HUGE_VAL,mdiv=t->norm[m]+t->norm[n];
 			for(i=0;i<t->feas->samples;i++){
 				if(norb[i]-mdiv<t->u)continue; /* Continue if we not pass the threshold. */
@@ -136,12 +143,13 @@ mergelist *gmm_merge_list(data *feas,gmm *gmix,decimal u,number numthreads){
 			else mlst->merge[n]=-1,mlst->value[n]=0,mlst->endmix--;
 		}
 		if(mlst->merge[m]==0) /* Delete unused components of the mixture. */
-			if(gmix->mix[m]._cfreq<=1)mlst->merge[m]=-1,mlst->value[m]=0,mlst->endmix--;
+			if(gmix->mix[m]._cfreq<=1)
+				mlst->merge[m]=-1,mlst->value[m]=0,mlst->endmix--;
 	}
 	gmm_init_classifier(gmix);
 	pthread_mutex_destroy(mutex);
 	pthread_cond_destroy(cond);
-	free(norm); free(count);
+	free(norm); free(count); free(t);
 	return mlst;
 }
 
@@ -150,4 +158,12 @@ void gmm_merge_delete(mergelist *mlst){
 	free(mlst->merge);
 	free(mlst->value);
 	free(mlst);
+}
+
+/* Merge and prunes the not useful components of our model. */
+gmm *gmm_merge(gmm *gmix,data *feas,decimal u,number numthreads){
+	mergelist *mlst=gmm_merge_list(feas,gmix,u,numthreads);
+	gmm *gnew=gmm_make_merge(gmix,mlst);
+	gmm_merge_delete(mlst);
+	return gnew;
 }

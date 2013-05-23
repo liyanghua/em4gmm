@@ -90,6 +90,7 @@ decimal gmm_simple_classify(data *feas,gmm *gmix,gmm *gworld,number numthreads){
 		pthread_join(t[i].thread,NULL);
 		result+=t[i].result;
 	}
+	free(t);
 	return (result*0.5)/feas->samples;
 }
 
@@ -97,7 +98,7 @@ decimal gmm_simple_classify(data *feas,gmm *gmix,gmm *gworld,number numthreads){
 void *thread_classifier(void *tdata){
 	classifier *t=(classifier*)tdata;
 	decimal x,max1,max2,prob; number i,m,j,c,s;
-	char *buffer=(char*)calloc(s=23*t->gmix->num,sizeof(char));
+	char *buffer=(char*)calloc(s=30*t->gmix->num,sizeof(char));
 	for(i=t->ini;i<t->end;i++){
 		if(t->gworld!=NULL){ /* If the world model is defined, use it. */
 			max2=-HUGE_VAL;
@@ -150,7 +151,8 @@ decimal gmm_classify(char *filename,data *feas,gmm *gmix,gmm *gworld,number numt
 	fprintf(f,"{\n\t\"samples\": %i,\n\t\"classes\": %i,",feas->samples,gmix->num);
 	fprintf(f,"\n\t\"samples_results\": [ ");
 	pthread_mutex_init(mutex,NULL);
-	for(i=0;i<gmix->num;i++)gmix->mix[i]._cfreq=0;
+	for(i=0;i<gmix->num;i++)
+		gmix->mix[i]._cfreq=0;
 	for(i=0;i<numthreads;i++){ /* Set and launch the parallel classify. */
 		t[i].feas=feas,t[i].gmix=gmix,t[i].gworld=gworld,t[i].ini=i*inc,t[i].mutex=mutex;
 		t[i].end=(i==numthreads-1)?(feas->samples):((i+1)*inc),t[i].f=f,t[i].flag=flag;
@@ -165,6 +167,6 @@ decimal gmm_classify(char *filename,data *feas,gmm *gmix,gmm *gworld,number numt
 	for(i=1;i<gmix->num;i++)
 		fprintf(f,", %i",gmix->mix[i]._cfreq);
 	fprintf(f," ],\n\t\"global_score\": %.10f\n}",result);
-	fclose(f);
+	fclose(f); free(t); free(flag);
 	return result/feas->samples;
 }

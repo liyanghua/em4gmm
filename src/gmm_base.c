@@ -56,8 +56,7 @@ gmm *gmm_initialize(data *feas,number nmix){
 
 /* Load the Gaussian Mixture from the file received as parameter. */
 gmm *gmm_load(char *filename){
-	number m,d;
-	FILE *f=fopen(filename,"rb");
+	number m,d; FILE *f=fopen(filename,"rb");
 	if(!f)fprintf(stderr,"Error: Not %s model file found.\n",filename),exit(1);
 	fread(&d,1,sizeof(number),f);
 	fread(&m,1,sizeof(number),f);
@@ -74,8 +73,7 @@ gmm *gmm_load(char *filename){
 
 /* Save the Gaussian Mixture to the file received as parameter. */
 void gmm_save(char *filename,gmm *gmix){
-	number m;
-	FILE *f=fopen(filename,"wb");
+	number m; FILE *f=fopen(filename,"wb");
 	if(!f)fprintf(stderr,"Error: Can not write to %s file.\n",filename),exit(1);
 	fwrite(&gmix->dimension,1,sizeof(number),f);
 	fwrite(&gmix->num,1,sizeof(number),f);
@@ -118,6 +116,7 @@ void gmm_delete(gmm *gmix){
 	number i;
 	for(i=0;i<gmix->num;i++)
 		free(gmix->mix[i].mean);
+	free(gmix->mcov);
 	free(gmix->mix);
 	free(gmix);
 }

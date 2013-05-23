@@ -71,6 +71,7 @@ int main(int argc,char *argv[]) {
 		nmix=sqrt(feas->samples/2);
 	}
 	gmm *gmix=gmm_initialize(feas,nmix); /* Good GMM initialization using data.    */
+	fprintf(stdout,"Number of Components: %06i\n",gmix->num);
 	for(o=1;o<=imax;o++){
 		for(i=1;i<=imax;i++){
 			llh=gmm_EMtrain(feas,gmix,t); /* Compute one iteration of EM algorithm.   */
@@ -81,10 +82,8 @@ int main(int argc,char *argv[]) {
 		}
 		x=gmix->num;
 		if(m>=0){
-			mergelist *mlst=gmm_merge_list(feas,gmix,m,t);
-			gmix=gmm_merge(gmix,mlst);
-			gmm_merge_delete(mlst);
-			fprintf(stdout,"Number of Components: %06i   Merged: %06i\n",gmix->num,x-gmix->num);
+			gmix=gmm_merge(gmix,feas,m,t);
+			fprintf(stdout,"Number of Components: %06i\n",gmix->num);
 		}
 		if(x==gmix->num)break;
 		last=INT_MIN;
