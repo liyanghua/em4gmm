@@ -98,7 +98,8 @@ decimal gmm_simple_classify(data *feas,gmm *gmix,gmm *gworld,number numthreads){
 void *thread_classifier(void *tdata){
 	classifier *t=(classifier*)tdata;
 	decimal x,max1,max2,prob; number i,m,j,c,s;
-	char *buffer=(char*)calloc(s=30*t->gmix->num,sizeof(char));
+	char *buf1=(char*)calloc(s=25*t->gmix->num,sizeof(char));
+	char *buf2=(char*)calloc(s=25*t->gmix->num,sizeof(char)),*bufi;
 	for(i=t->ini;i<t->end;i++){
 		if(t->gworld!=NULL){ /* If the world model is defined, use it. */
 			max2=-HUGE_VAL;
@@ -118,7 +119,7 @@ void *thread_classifier(void *tdata){
 			x=t->feas->data[i][j]-t->gmix->mix[0].mean[j];
 			max1-=(x*x)*t->gmix->mix[0].dcov[j];
 		}
-		snprintf(buffer,s,"%.10f",(max1-max2)*0.5);
+		snprintf(buf1,s,"%.10f",(max1-max2)*0.5);
 		for(m=1;m<t->gmix->num;m++){
 			prob=t->gmix->mix[m].cgauss; /* The precalculated non-data dependant part. */
 			for(j=0;j<t->gmix->dimension;j++){
@@ -126,18 +127,19 @@ void *thread_classifier(void *tdata){
 				prob-=(x*x)*t->gmix->mix[m].dcov[j];
 			}
 			if(max1<prob)max1=prob,c=m; /* Fast classifier using Viterbi aproximation. */
-			snprintf(buffer,s,"%s, %.10f",buffer,(prob-max2)*0.5);
+			bufi=buf1; buf1=buf2; buf2=bufi;
+			snprintf(buf1,s,"%s, %.10f",buf2,(prob-max2)*0.5);
 		}
 		t->result+=(max1-max2)*0.5;
 		pthread_mutex_lock(t->mutex); /* Write the classifier log on the jSON file. */
 		t->gmix->mix[c]._cfreq++;
 		if(t->flag[0]==0){
-			fprintf(t->f,"\n\t\t{ \"sample\": %i, \"lprob\": [ %s ], \"class\": %i }",i,buffer,c);
+			fprintf(t->f,"\n\t\t{ \"sample\": %i, \"lprob\": [ %s ], \"class\": %i }",i,buf1,c);
 			t->flag[0]=1;
-		}else fprintf(t->f,",\n\t\t{ \"sample\": %i, \"lprob\": [ %s ], \"class\": %i }",i,buffer,c);
+		}else fprintf(t->f,",\n\t\t{ \"sample\": %i, \"lprob\": [ %s ], \"class\": %i }",i,buf1,c);
 		pthread_mutex_unlock(t->mutex);
 	}
-	free(buffer);
+	free(buf1); free(buf2);
 }
 
 /* Detailed Gaussian Mixture classifier using a Viterbi aproximation. */
