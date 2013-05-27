@@ -12,6 +12,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details. */
 
 #include "global.h"
+#include "workers.h"
 #include "data.h"
 #include "gmm.h"
 
@@ -65,7 +66,8 @@ int main(int argc,char *argv[]) {
 		}
 	}
 	if(x<2)show_help(argv[0]),exit(1); /* Test if exists all the needed arguments. */
-	data *feas=feas_load(fnf); /* Load the features from the specified disc file.  */
+	workers *pool=workers_create(t);
+	data *feas=feas_load(fnf,pool); /* Load the features from the specified disc file. s*/
 	if(nmix==-1){
 		if(m<0)m=0.95;
 		nmix=sqrt(feas->samples/2);
@@ -74,7 +76,7 @@ int main(int argc,char *argv[]) {
 	fprintf(stdout,"Number of Components: %06i\n",gmix->num);
 	for(o=1;o<=imax;o++){
 		for(i=1;i<=imax;i++){
-			llh=gmm_EMtrain(feas,gmix,t); /* Compute one iteration of EM algorithm.   */
+			llh=gmm_EMtrain(feas,gmix,pool); /* Compute one iteration of EM algorithm.   */
 			fprintf(stdout,"Iteration: %05i    Improvement: %3i%c    LogLikelihood: %.3f\n",
 				i,abs(round(-100*(llh-last)/last)),'%',llh); /* Show the EM results.  */
 			if(last-llh>-sigma||isnan(last-llh))break; /* Break with sigma threshold. */
@@ -82,12 +84,13 @@ int main(int argc,char *argv[]) {
 		}
 		x=gmix->num;
 		if(m>=0){
-			gmix=gmm_merge(gmix,feas,m,t);
+			gmix=gmm_merge(gmix,feas,m,pool);
 			fprintf(stdout,"Number of Components: %06i\n",gmix->num);
 		}
 		if(x==gmix->num)break;
 		last=INT_MIN;
 	}
+	workers_finish(pool);
 	feas_delete(feas);
 	if(fnr!=NULL)gmm_save_log(fnr,gmix);
 	gmm_init_classifier(gmix); /* Pre-compute the non-data dependant part of classifier. */

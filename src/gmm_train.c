@@ -12,11 +12,11 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details. */
 
 #include "global.h"
+#include "workers.h"
 #include "data.h"
 #include "gmm.h"
 
 typedef struct{
-	pthread_t thread;       /* pthread identifier of the thread.   */
 	pthread_mutex_t *mutex; /* Common mutex to lock shared data.   */
 	data *feas;             /* Shared pointer to loaded samples.   */
 	gmm *gmix;              /* Shared pointer to gaussian mixture. */
@@ -24,7 +24,7 @@ typedef struct{
 }trainer;
 
 /* Parallel implementation of the E Step of the EM algorithm. */
-void *thread_trainer(void *tdata){
+void thread_trainer(void *tdata){
 	trainer *t=(trainer*)tdata; /* Get the data for the thread and alloc memory. */
 	gmm *gmix=t->gmix; data *feas=t->feas;
 	decimal *zval=(decimal*)calloc(2*gmix->num,sizeof(decimal)),*prob=zval+gmix->num;
@@ -72,23 +72,22 @@ void *thread_trainer(void *tdata){
 }
 
 /* Perform one iteration of the EM algorithm with the data and the mixture indicated. */
-decimal gmm_EMtrain(data *feas,gmm *gmix,number numthreads){
+decimal gmm_EMtrain(data *feas,gmm *gmix,workers *pool){
 	pthread_mutex_t *mutex=(pthread_mutex_t*)calloc(1,sizeof(pthread_mutex_t));
-	trainer *t=(trainer*)calloc(numthreads,sizeof(trainer));
+	trainer *t=(trainer*)calloc(pool->num,sizeof(trainer));
 	number m,i,inc; decimal tz,x;
 	/* Calculate expected value and accumulate the counts (E Step). */
 	gmm_init_classifier(gmix);
 	for(m=0;m<gmix->num;m++)
 		gmix->mix[m]._cfreq=0;
 	pthread_mutex_init(mutex,NULL);
-	inc=feas->samples/numthreads;
-	for(i=0;i<numthreads;i++){ /* Set and launch the parallel training. */
+	inc=feas->samples/pool->num;
+	for(i=0;i<pool->num;i++){ /* Set and launch the parallel training. */
 		t[i].feas=feas,t[i].gmix=gmix,t[i].mutex=mutex,t[i].ini=i*inc;
-		t[i].end=(i==numthreads-1)?(feas->samples):((i+1)*inc);
-		pthread_create(&t[i].thread,NULL,thread_trainer,(void*)&t[i]);
+		t[i].end=(i==pool->num-1)?(feas->samples):((i+1)*inc);
+		workers_addtask(pool,thread_trainer,(void*)&t[i]);
 	}
-	for(i=0;i<numthreads;i++) /* Wait to the end of the parallel training. */
-		pthread_join(t[i].thread,NULL);
+	workers_waitall(pool);
 	pthread_mutex_destroy(mutex);
 	/* Estimate the new parameters of the Gaussian Mixture (M Step). */
 	for(m=0;m<gmix->num;m++){

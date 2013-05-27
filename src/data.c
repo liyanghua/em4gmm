@@ -12,10 +12,19 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details. */
 
 #include "global.h"
+#include "workers.h"
 #include "data.h"
 
+typedef struct{
+	data *feas;            /* Shared pointer to samples structure.  */
+	number r,s,d,c,sign;   /* Internal variables shared by threads. */
+	number header,point;   /* Internal variables shared by threads. */
+	decimal *aux,next,dec; /* Internal variables shared by threads. */
+	char *buff;            /* Pointer to loaded bytes on memory.    */
+}loader;
+
 /* Asynchronous implementation of the buffer to feas converter. */
-void *thread_loader(void *tdata){
+void thread_loader(void *tdata){
 	loader *t=(loader*)tdata; number i;
 	for(i=0;i<t->r;i++){
 		if(t->buff[i]>='0'){ /* Convert an array into a decimal number. */
@@ -46,24 +55,24 @@ void *thread_loader(void *tdata){
 }
 
 /* Load the samples from a plain text file with the specified format. */
-data *feas_load(char *filename){
+data *feas_load(char *filename,workers *pool){
 	data *feas=(data*)calloc(1,sizeof(data));
 	loader *t=(loader*)calloc(1,sizeof(loader));
 	t->s=t->d=t->c=t->point=t->next=0,t->header=2,t->dec=t->sign=1;
-	number i,r; t->feas=feas,t->buff=NULL;
+	t->feas=feas,t->buff=NULL; number i,r;
 	gzFile f=gzopen(filename,"rb"); /* Read the file using zlib library. */
 	if(!f)fprintf(stderr,"Error: Not %s feature file found.\n",filename),exit(1);
 	while(!gzeof(f)){
-		char *buff=(char*)calloc(SIZE_BUFFER,sizeof(char));
-		r=gzread(f,buff,SIZE_BUFFER); /* Read the buffer and do asynchronous load. */
+		char *buff=(char*)calloc(BUFFER_SIZE,sizeof(char));
+		r=gzread(f,buff,BUFFER_SIZE); /* Read the buffer and do asynchronous load. */
 		if(t->buff!=NULL){
-			pthread_join(t->thread,NULL);
+			workers_waitall(pool);
 			free(t->buff);
 		}
 		t->buff=buff,t->r=r;
-		pthread_create(&t->thread,NULL,thread_loader,(void*)t);
+		workers_addtask(pool,thread_loader,(void*)t);
 	}
-	pthread_join(t->thread,NULL);
+	workers_waitall(pool);
 	gzclose(f); free(t->buff); free(t);
 	for(i=0;i<feas->dimension;i++){ /* Compute the mean and variance of the data. */
 		feas->mean[i]/=feas->samples;

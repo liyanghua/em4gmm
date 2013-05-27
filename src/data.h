@@ -14,25 +14,18 @@ GNU General Public License for more details. */
 #ifndef _data_h
 #define _data_h
 
+	#define BUFFER_SIZE 2*1024*1024 /* Loader samples cache size.   */
+
 	typedef struct{
-		decimal **data;    /* A matrix of samples*dimension elements.  */
-		number samples;    /* Number of samples on the overall data.   */
-		number dimension;  /* Number of dimensions of the data loaded. */
-		decimal *mean;     /* The full mean of all the data samples.   */
-		decimal *variance; /* Variance (no square root) of samples.    */
+		decimal **data;    /* The data matrix (samples*dimension).  */
+		decimal *mean;     /* The mean by dimension of the samples. */
+		decimal *variance; /* Variance of all the loaded samples.   */
+		number samples;    /* Samples number of the overall data.   */
+		number dimension;  /* Dimension number of the data loaded.  */
 	}data;
 
-	typedef struct{
-		pthread_t thread;      /* pthread identifier of this thread.    */
-		data *feas;            /* Shared pointer to samples structure.  */
-		number r,s,d,c,sign;   /* Internal variables shared by threads. */
-		number header,point;   /* Internal variables shared by threads. */
-		decimal *aux,next,dec; /* Internal variables shared by threads. */
-		char *buff;            /* Pointer to loaded bytes on memory.    */
-	}loader;
-
-	/* Public functions prototypes to work with the samples. */
-	data *feas_load(char*);
+	/* Public functions to work with the samples. */
+	data *feas_load(char*,workers*);
 	void feas_delete(data*);
 
 #endif

@@ -12,6 +12,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details. */
 
 #include "global.h"
+#include "workers.h"
 #include "data.h"
 #include "gmm.h"
 
@@ -23,7 +24,6 @@ typedef struct{
 }mergelist;
 
 typedef struct{
-	pthread_t thread;       /* pthread identifier of the thread.   */
 	pthread_mutex_t *mutex; /* Variable needed to do the barrier.  */
 	pthread_cond_t *cond;   /* Variable needed to do the barrier.  */
 	number *count;          /* Variable needed to do the barrier.  */
@@ -63,7 +63,7 @@ gmm *gmm_make_merge(gmm *gmix,mergelist *mlst){
 }
 
 /* Parallel implementation of the similarity algorithm. */
-void *thread_merger(void *tdata){
+void thread_merger(void *tdata){
 	merger *t=(merger*)tdata; number m,n,i,j;
 	decimal *norb=(decimal*)calloc(t->feas->samples,sizeof(decimal)),x,prob,nmax,mdiv;
 	for(m=t->ini;m<t->gmix->num;m+=t->num){ /* Precalculate the normalization part once. */
@@ -116,7 +116,7 @@ void *thread_merger(void *tdata){
 }
 
 /* Obtain a merge list based on the similarity of two components. */
-mergelist *gmm_merge_list(data *feas,gmm *gmix,decimal u,number numthreads){
+mergelist *gmm_merge_list(data *feas,gmm *gmix,decimal u,workers *pool){
 	pthread_mutex_t *mutex=(pthread_mutex_t*)calloc(1,sizeof(pthread_mutex_t));
 	pthread_cond_t *cond=(pthread_cond_t*)calloc(1,sizeof(pthread_cond_t));
 	mergelist *mlst=(mergelist*)calloc(1,sizeof(mergelist));
@@ -124,18 +124,17 @@ mergelist *gmm_merge_list(data *feas,gmm *gmix,decimal u,number numthreads){
 	mlst->value=(decimal*)calloc(mlst->endmix=gmix->num,sizeof(decimal));
 	decimal *norm=(decimal*)calloc(gmix->num,sizeof(decimal));
 	number *count=(number*)calloc(1,sizeof(number)),m,n,i;
-	merger *t=(merger*)calloc(numthreads,sizeof(merger));
+	merger *t=(merger*)calloc(pool->num,sizeof(merger));
 	gmm_init_classifier(gmix); u=log(u);
 	pthread_mutex_init(mutex,NULL);
 	pthread_cond_init(cond,NULL);
-	for(i=0;i<numthreads;i++){ /* Set and launch the parallel computing. */
+	for(i=0;i<pool->num;i++){ /* Set and launch the parallel computing. */
 		t[i].feas=feas,t[i].gmix=gmix,t[i].norm=norm,t[i].ini=i;
-		t[i].u=u,t[i].num=numthreads,t[i].mlst=mlst;
+		t[i].u=u,t[i].num=pool->num,t[i].mlst=mlst;
 		t[i].cond=cond,t[i].mutex=mutex,t[i].count=count;
-		pthread_create(&t[i].thread,NULL,thread_merger,(void*)&t[i]);
+		workers_addtask(pool,thread_merger,(void*)&t[i]);
 	}
-	for(i=0;i<numthreads;i++) /* Wait to the end of parallel computing. */
-		pthread_join(t[i].thread,NULL);
+	workers_waitall(pool); /* Wait to the end of parallel computing. */
 	for(m=0;m<gmix->num;m++){ /* Compose and normalize the merge list.  */
 		n=mlst->merge[m];
 		if(n>0){
@@ -161,8 +160,8 @@ void gmm_merge_delete(mergelist *mlst){
 }
 
 /* Merge and prunes the not useful components of our model. */
-gmm *gmm_merge(gmm *gmix,data *feas,decimal u,number numthreads){
-	mergelist *mlst=gmm_merge_list(feas,gmix,u,numthreads);
+gmm *gmm_merge(gmm *gmix,data *feas,decimal u,workers *pool){
+	mergelist *mlst=gmm_merge_list(feas,gmix,u,pool);
 	gmm *gnew=gmm_make_merge(gmix,mlst);
 	gmm_merge_delete(mlst);
 	return gnew;

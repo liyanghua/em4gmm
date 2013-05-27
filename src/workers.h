@@ -11,24 +11,22 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details. */
 
-#ifndef _global_h
-#define _global_h
+#ifndef _workers_h
+#define _workers_h
 
-	#include <stdio.h>
-	#include <stdlib.h>
-	#include <math.h>
-	#include <string.h>
-	#include <float.h>
-	#include <limits.h>
+	typedef struct{
+		pthread_t *threads;
+		pthread_mutex_t excluder;
+		pthread_cond_t newtask;
+		pthread_cond_t launcher;
+		pthread_cond_t waiter;
+		number num,stop,next,exec;
+		void (*routine)(void*),*data;
+	}workers;
 
-	#include <unistd.h>
-	#include <getopt.h>
-	#include <pthread.h>
-	#include <zlib.h>
-
-	#define NUM_PI      3.14159265358979323846 /* Math PI value.   */
-
-	typedef double decimal; /* Specifies the default decimal type. */
-	typedef int number;     /* Specifies the default integer type. */
+	workers *workers_create(number);
+	void workers_addtask(workers*,void(*)(void*),void*);
+	void workers_waitall(workers*);
+	void workers_finish(workers*);
 
 #endif

@@ -12,6 +12,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details. */
 
 #include "global.h"
+#include "workers.h"
 #include "data.h"
 #include "gmm.h"
 
@@ -51,13 +52,15 @@ int main(int argc,char *argv[]){
 		}
 	}
 	if(x<2)show_help(argv[0]),exit(1); /* Test if exists needed arguments. */
-	data *feas=feas_load(fnf); /* Load the data from the specified file.   */
+	workers *pool=workers_create(t);
+	data *feas=feas_load(fnf,pool); /* Load the data from the specified file. */
 	gmm *gmix=NULL,*gworld=NULL;
 	if(fnw!=NULL)gworld=gmm_load(fnw); /* Load world model if is defined.  */
 	gmix=gmm_load(fnm);
-	if(fnr!=NULL)result=gmm_classify(fnr,feas,gmix,gworld,t);
-	else result=gmm_simple_classify(feas,gmix,gworld,t);
+	if(fnr!=NULL)result=gmm_classify(fnr,feas,gmix,gworld,pool);
+	else result=gmm_simple_classify(feas,gmix,gworld,pool);
 	fprintf(stdout,"Score: %.10f\n",result);
+	workers_finish(pool);
 	gmm_delete(gmix);
 	if(gworld!=NULL)gmm_delete(gworld);
 	feas_delete(feas);

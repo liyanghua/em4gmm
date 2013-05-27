@@ -12,11 +12,11 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details. */
 
 #include "global.h"
+#include "workers.h"
 #include "data.h"
 #include "gmm.h"
 
 typedef struct{
-	pthread_t thread;       /* pthread identifier of the thread.   */
 	decimal result;         /* Variable to store the result found. */
 	data *feas;             /* Shared pointer to loaded samples.   */
 	gmm *gmix;              /* Shared pointer to gaussian mixture. */
@@ -44,7 +44,7 @@ void gmm_init_classifier(gmm *gmix){
 }
 
 /* Parallel and fast implementation of the Gaussian Mixture classifier. */
-void *thread_simple_classifier(void *tdata){
+void thread_simple_classifier(void *tdata){
 	classifier *t=(classifier*)tdata;
 	decimal x,max,prob; number i,m,j;
 	if(t->gworld!=NULL){ /* If the world model is defined, use it. */
@@ -78,24 +78,23 @@ void *thread_simple_classifier(void *tdata){
 }
 
 /* Efficient Gaussian Mixture classifier using a Viterbi aproximation. */
-decimal gmm_simple_classify(data *feas,gmm *gmix,gmm *gworld,number numthreads){
-	classifier *t=(classifier*)calloc(numthreads,sizeof(classifier));
-	number i,inc=feas->samples/numthreads; decimal result=0;
-	for(i=0;i<numthreads;i++){ /* Set and launch the parallel classify. */
+decimal gmm_simple_classify(data *feas,gmm *gmix,gmm *gworld,workers *pool){
+	classifier *t=(classifier*)calloc(pool->num,sizeof(classifier));
+	number i,inc=feas->samples/pool->num; decimal result=0;
+	for(i=0;i<pool->num;i++){ /* Set and launch the parallel classify. */
 		t[i].feas=feas,t[i].gmix=gmix,t[i].gworld=gworld,t[i].ini=i*inc;
-		t[i].end=(i==numthreads-1)?(feas->samples):((i+1)*inc);
-		pthread_create(&t[i].thread,NULL,thread_simple_classifier,(void*)&t[i]);
+		t[i].end=(i==pool->num-1)?(feas->samples):((i+1)*inc);
+		workers_addtask(pool,thread_simple_classifier,(void*)&t[i]);
 	}
-	for(i=0;i<numthreads;i++){ /* Wait to the end of the parallel classify. */
-		pthread_join(t[i].thread,NULL);
+	workers_waitall(pool); /* Wait to the end of the parallel classify. */
+	for(i=0;i<pool->num;i++)
 		result+=t[i].result;
-	}
 	free(t);
 	return (result*0.5)/feas->samples;
 }
 
 /* Parallel implementation of the Gaussian Mixture classifier that holds the data. */
-void *thread_classifier(void *tdata){
+void thread_classifier(void *tdata){
 	classifier *t=(classifier*)tdata;
 	decimal x,max1,max2,prob; number i,m,j,c,s;
 	char *buf1=(char*)calloc(s=25*t->gmix->num,sizeof(char));
@@ -143,10 +142,10 @@ void *thread_classifier(void *tdata){
 }
 
 /* Detailed Gaussian Mixture classifier using a Viterbi aproximation. */
-decimal gmm_classify(char *filename,data *feas,gmm *gmix,gmm *gworld,number numthreads){
+decimal gmm_classify(char *filename,data *feas,gmm *gmix,gmm *gworld,workers *pool){
 	pthread_mutex_t *mutex=(pthread_mutex_t*)calloc(1,sizeof(pthread_mutex_t));
-	classifier *t=(classifier*)calloc(numthreads,sizeof(classifier));
-	number i,inc=feas->samples/numthreads; decimal result=0;
+	classifier *t=(classifier*)calloc(pool->num,sizeof(classifier));
+	number i,inc=feas->samples/pool->num; decimal result=0;
 	number *flag=(number*)calloc(1,sizeof(number));
 	FILE *f=fopen(filename,"w");
 	if(!f)fprintf(stderr,"Error: Can not write to %s file.\n",filename),exit(1);
@@ -155,15 +154,14 @@ decimal gmm_classify(char *filename,data *feas,gmm *gmix,gmm *gworld,number numt
 	pthread_mutex_init(mutex,NULL);
 	for(i=0;i<gmix->num;i++)
 		gmix->mix[i]._cfreq=0;
-	for(i=0;i<numthreads;i++){ /* Set and launch the parallel classify. */
+	for(i=0;i<pool->num;i++){ /* Set and launch the parallel classify. */
 		t[i].feas=feas,t[i].gmix=gmix,t[i].gworld=gworld,t[i].ini=i*inc,t[i].mutex=mutex;
-		t[i].end=(i==numthreads-1)?(feas->samples):((i+1)*inc),t[i].f=f,t[i].flag=flag;
-		pthread_create(&t[i].thread,NULL,thread_classifier,(void*)&t[i]);
+		t[i].end=(i==pool->num-1)?(feas->samples):((i+1)*inc),t[i].f=f,t[i].flag=flag;
+		workers_addtask(pool,thread_classifier,(void*)&t[i]);
 	}
-	for(i=0;i<numthreads;i++){ /* Wait to the end of the parallel classify. */
-		pthread_join(t[i].thread,NULL);
+	workers_waitall(pool); /* Wait to the end of the parallel classify. */
+	for(i=0;i<pool->num;i++)
 		result+=t[i].result;
-	}
 	pthread_mutex_destroy(mutex);
 	fprintf(f,"\n\t],\n\t\"mixture_occupation\": [ %i",gmix->mix[0]._cfreq);
 	for(i=1;i<gmix->num;i++)

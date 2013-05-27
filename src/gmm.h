@@ -39,10 +39,10 @@ GNU General Public License for more details. */
 	void gmm_save(char*,gmm*);
 	void gmm_save_log(char*,gmm*);
 	void gmm_delete(gmm*);
-	decimal gmm_classify(char*,data*,gmm*,gmm*,number);
-	decimal gmm_simple_classify(data*,gmm*,gmm*,number);
-	decimal gmm_EMtrain(data*,gmm*,number);
-	gmm *gmm_merge(gmm*,data*,decimal,number);
+	decimal gmm_classify(char*,data*,gmm*,gmm*,workers*);
+	decimal gmm_simple_classify(data*,gmm*,gmm*,workers*);
+	decimal gmm_EMtrain(data*,gmm*,workers*);
+	gmm *gmm_merge(gmm*,data*,decimal,workers*);
 	/* Private function prototypes to work with Gaussian Mixture Models. */
 	gmm *gmm_create(number,number);
 	void gmm_init_classifier(gmm*);
