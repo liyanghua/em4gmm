@@ -25,7 +25,7 @@ all:
 	$(CC) $(CFLAGS) -fprofile-generate $(ALL) $(SRC)/train.c -o $(BIN)/gmmtrain -pthread -lz -lm
 	chmod +x $(BIN)/gmmtrain
 	$(BIN)/gmmtrain -d $(DAT)/data.gz -m $(DAT)/data.gmm -n 128 -s 0.1 -u 0.9 -r $(DAT)/train.json
-	$(CC) $(CFLAGS) -fprofile-use $(ALL) $(SRC)/train.c -o $(BIN)/gmmtrain -pthread -lz -lm
+	$(CC) $(CFLAGS) -fprofile-use -fprofile-correction $(ALL) $(SRC)/train.c -o $(BIN)/gmmtrain -pthread -lz -lm
 	strip $(BIN)/gmmtrain
 	chmod +x $(BIN)/gmmtrain
 	rm -f *.gcda
@@ -33,7 +33,7 @@ all:
 	chmod +x $(BIN)/gmmclass
 	$(BIN)/gmmclass -d $(DAT)/data.gz -m $(DAT)/data.gmm -w $(DAT)/data.gmm -r $(DAT)/class.json
 	$(BIN)/gmmclass -d $(DAT)/data.gz -m $(DAT)/data.gmm -w $(DAT)/data.gmm
-	$(CC) $(CFLAGS) -fprofile-use $(ALL) $(SRC)/class.c -o $(BIN)/gmmclass -pthread -lz -lm
+	$(CC) $(CFLAGS) -fprofile-use -fprofile-correction $(ALL) $(SRC)/class.c -o $(BIN)/gmmclass -pthread -lz -lm
 	strip $(BIN)/gmmclass
 	chmod +x $(BIN)/gmmclass
 	rm -f *.gcda
