@@ -14,8 +14,6 @@ GNU General Public License for more details. */
 #ifndef _data_h
 #define _data_h
 
-	#define BUFFER_SIZE 2*1024*1024 /* Loader samples cache size.   */
-
 	typedef struct{
 		decimal **data;    /* The data matrix (samples*dimension).  */
 		decimal *mean;     /* The mean by dimension of the samples. */

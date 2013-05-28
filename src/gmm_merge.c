@@ -24,15 +24,13 @@ typedef struct{
 }mergelist;
 
 typedef struct{
-	pthread_mutex_t *mutex; /* Variable needed to do the barrier.  */
-	pthread_cond_t *cond;   /* Variable needed to do the barrier.  */
-	number *count;          /* Variable needed to do the barrier.  */
-	data *feas;             /* Shared pointer to loaded samples.   */
-	gmm *gmix;              /* Shared pointer to gaussian mixture. */
-	number ini, num;        /* Initial and total part processed.   */
-	decimal *norm;          /* Pointer to shared normalization.    */
-	mergelist *mlst;        /* Shared pointer to the merge list.   */
-	decimal u;              /* The merge threshold used to merge.  */
+	workers_mutex *mutex; /* Common mutex to lock shared data.   */
+	data *feas;           /* Shared pointer to loaded samples.   */
+	gmm *gmix;            /* Shared pointer to gaussian mixture. */
+	number ini,num;       /* Initial and total part processed.   */
+	decimal *norm;        /* Pointer to shared normalization.    */
+	mergelist *mlst;      /* Shared pointer to the merge list.   */
+	decimal u;            /* The merge threshold used to merge.  */
 }merger;
 
 /* Merge the components of one mixture based on the provided list. */
@@ -62,10 +60,10 @@ gmm *gmm_make_merge(gmm *gmix,mergelist *mlst){
 	return cloned;
 }
 
-/* Parallel implementation of the similarity algorithm. */
-void thread_merger(void *tdata){
-	merger *t=(merger*)tdata; number m,n,i,j;
-	decimal *norb=(decimal*)calloc(t->feas->samples,sizeof(decimal)),x,prob,nmax,mdiv;
+/* Parallel implementation of the similarity algorithm (Prepare cache). */
+void thread_merger_step1(void *tdata){
+	merger *t=(merger*)tdata;
+	number m,i,j; decimal x,prob;
 	for(m=t->ini;m<t->gmix->num;m+=t->num){ /* Precalculate the normalization part once. */
 		if(t->gmix->mix[m]._cfreq<=1)continue; /* If it is unused, will be deleted. */
 		t->norm[m]=-HUGE_VAL;
@@ -79,10 +77,12 @@ void thread_merger(void *tdata){
 			t->norm[m]=t->norm[m]>prob?t->norm[m]:prob;
 		}
 	}
-	pthread_mutex_lock(t->mutex); /* Barrier to wait all the other threads. */
-	if(++(*t->count)==t->num)pthread_cond_broadcast(t->cond);
-	else pthread_cond_wait(t->cond,t->mutex);
-	pthread_mutex_unlock(t->mutex);
+}
+
+/* Parallel implementation of the similarity algorithm (Finish step). */
+void thread_merger_step2(void *tdata){
+	merger *t=(merger*)tdata; number m,n,i,j;
+	decimal *norb=(decimal*)calloc(t->feas->samples,sizeof(decimal)),x,prob,nmax,mdiv;
 	for(m=t->ini;m<(t->gmix->num-1);m+=t->num){ /* Fast calculate of the similarity. */
 		if(t->gmix->mix[m]._cfreq<=1)continue; /* If it is unused, will be deleted. */
 		for(i=0;i<t->feas->samples;i++){
@@ -107,7 +107,9 @@ void thread_merger(void *tdata){
 			}
 			prob=((nmax+nmax)-mdiv)*0.5; /* Similarity between n and m. */
 			if(prob>t->u){
+				workers_mutex_lock(t->mutex);
 				t->mlst->merge[m]=n,t->mlst->value[m]=prob;
+				workers_mutex_unlock(t->mutex);
 				break;
 			}
 		}
@@ -117,38 +119,36 @@ void thread_merger(void *tdata){
 
 /* Obtain a merge list based on the similarity of two components. */
 mergelist *gmm_merge_list(data *feas,gmm *gmix,decimal u,workers *pool){
-	pthread_mutex_t *mutex=(pthread_mutex_t*)calloc(1,sizeof(pthread_mutex_t));
-	pthread_cond_t *cond=(pthread_cond_t*)calloc(1,sizeof(pthread_cond_t));
+	number m,i,n=workers_number(pool);
+	workers_mutex *mutex=workers_mutex_create();
 	mergelist *mlst=(mergelist*)calloc(1,sizeof(mergelist));
 	mlst->merge=(number*)calloc(mlst->inimix=gmix->num,sizeof(number));
 	mlst->value=(decimal*)calloc(mlst->endmix=gmix->num,sizeof(decimal));
 	decimal *norm=(decimal*)calloc(gmix->num,sizeof(decimal));
-	number *count=(number*)calloc(1,sizeof(number)),m,n,i;
-	merger *t=(merger*)calloc(pool->num,sizeof(merger));
+	merger *t=(merger*)calloc(n,sizeof(merger));
 	gmm_init_classifier(gmix); u=log(u);
-	pthread_mutex_init(mutex,NULL);
-	pthread_cond_init(cond,NULL);
-	for(i=0;i<pool->num;i++){ /* Set and launch the parallel computing. */
+	for(i=0;i<n;i++){ /* Set and launch the parallel computing. */
 		t[i].feas=feas,t[i].gmix=gmix,t[i].norm=norm,t[i].ini=i;
-		t[i].u=u,t[i].num=pool->num,t[i].mlst=mlst;
-		t[i].cond=cond,t[i].mutex=mutex,t[i].count=count;
-		workers_addtask(pool,thread_merger,(void*)&t[i]);
+		t[i].u=u,t[i].num=n,t[i].mlst=mlst,t[i].mutex=mutex;
+		workers_addtask(pool,thread_merger_step1,(void*)&t[i]);
 	}
 	workers_waitall(pool); /* Wait to the end of parallel computing. */
+	for(i=0;i<n;i++)
+		workers_addtask(pool,thread_merger_step2,(void*)&t[i]);
+	workers_waitall(pool); /* Wait to the end of parallel computing. */
+	workers_mutex_delete(mutex);
 	for(m=0;m<gmix->num;m++){ /* Compose and normalize the merge list.  */
-		n=mlst->merge[m];
-		if(n>0){
-			if(mlst->merge[n]==-1)mlst->merge[m]=0;
-			else mlst->merge[n]=-1,mlst->value[n]=0,mlst->endmix--;
+		i=mlst->merge[m];
+		if(i>0){
+			if(mlst->merge[i]==-1)mlst->merge[m]=0;
+			else mlst->merge[i]=-1,mlst->value[i]=0,mlst->endmix--;
 		}
 		if(mlst->merge[m]==0) /* Delete unused components of the mixture. */
 			if(gmix->mix[m]._cfreq<=1)
 				mlst->merge[m]=-1,mlst->value[m]=0,mlst->endmix--;
 	}
 	gmm_init_classifier(gmix);
-	pthread_mutex_destroy(mutex);
-	pthread_cond_destroy(cond);
-	free(norm); free(count); free(t);
+	free(norm); free(t);
 	return mlst;
 }
 

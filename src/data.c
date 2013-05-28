@@ -15,6 +15,8 @@ GNU General Public License for more details. */
 #include "workers.h"
 #include "data.h"
 
+#define BUFFER_SIZE 2*1024*1024 /* Loader samples cache size.   */
+
 typedef struct{
 	data *feas;            /* Shared pointer to samples structure.  */
 	number r,s,d,c,sign;   /* Internal variables shared by threads. */

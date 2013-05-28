@@ -17,10 +17,10 @@ GNU General Public License for more details. */
 #include "gmm.h"
 
 typedef struct{
-	pthread_mutex_t *mutex; /* Common mutex to lock shared data.   */
-	data *feas;             /* Shared pointer to loaded samples.   */
-	gmm *gmix;              /* Shared pointer to gaussian mixture. */
-	number ini, end;        /* Initial and final sample processed. */
+	workers_mutex *mutex; /* Common mutex to lock shared data.   */
+	data *feas;           /* Shared pointer to loaded samples.   */
+	gmm *gmix;            /* Shared pointer to gaussian mixture. */
+	number ini, end;      /* Initial and final sample processed. */
 }trainer;
 
 /* Parallel implementation of the E Step of the EM algorithm. */
@@ -57,7 +57,7 @@ void thread_trainer(void *tdata){
 			}
 		}
 	}
-	pthread_mutex_lock(t->mutex); /* Accumulate counts obtained to the mixture. */
+	workers_mutex_lock(t->mutex); /* Accumulate counts obtained to the mixture. */
 	gmix->llh+=llh;
 	for(m=0;m<gmix->num;m++){
 		gmix->mix[m]._z+=zval[m]; inc=m*j;
@@ -67,28 +67,27 @@ void thread_trainer(void *tdata){
 			gmix->mix[m]._dcov[j]+=dcov[inc+j];
 		}
 	}
-	pthread_mutex_unlock(t->mutex);
+	workers_mutex_unlock(t->mutex);
 	free(zval); free(mean); free(tfreq);
 }
 
 /* Perform one iteration of the EM algorithm with the data and the mixture indicated. */
 decimal gmm_EMtrain(data *feas,gmm *gmix,workers *pool){
-	pthread_mutex_t *mutex=(pthread_mutex_t*)calloc(1,sizeof(pthread_mutex_t));
-	trainer *t=(trainer*)calloc(pool->num,sizeof(trainer));
-	number m,i,inc; decimal tz,x;
+	number m,i,inc,n=workers_number(pool); decimal tz,x;
+	workers_mutex *mutex=workers_mutex_create();
+	trainer *t=(trainer*)calloc(n,sizeof(trainer));
 	/* Calculate expected value and accumulate the counts (E Step). */
 	gmm_init_classifier(gmix);
 	for(m=0;m<gmix->num;m++)
 		gmix->mix[m]._cfreq=0;
-	pthread_mutex_init(mutex,NULL);
-	inc=feas->samples/pool->num;
-	for(i=0;i<pool->num;i++){ /* Set and launch the parallel training. */
+	inc=feas->samples/n;
+	for(i=0;i<n;i++){ /* Set and launch the parallel training. */
 		t[i].feas=feas,t[i].gmix=gmix,t[i].mutex=mutex,t[i].ini=i*inc;
-		t[i].end=(i==pool->num-1)?(feas->samples):((i+1)*inc);
+		t[i].end=(i==n-1)?(feas->samples):((i+1)*inc);
 		workers_addtask(pool,thread_trainer,(void*)&t[i]);
 	}
 	workers_waitall(pool);
-	pthread_mutex_destroy(mutex);
+	workers_mutex_delete(mutex);
 	/* Estimate the new parameters of the Gaussian Mixture (M Step). */
 	for(m=0;m<gmix->num;m++){
 		gmix->mix[m].prior=log((tz=gmix->mix[m]._z)/feas->samples);

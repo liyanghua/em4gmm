@@ -14,19 +14,19 @@ GNU General Public License for more details. */
 #ifndef _workers_h
 #define _workers_h
 
-	typedef struct{
-		pthread_t *threads;
-		pthread_mutex_t excluder;
-		pthread_cond_t newtask;
-		pthread_cond_t launcher;
-		pthread_cond_t waiter;
-		number num,stop,next,exec;
-		void (*routine)(void*),*data;
-	}workers;
+	typedef workers,workers_mutex; /* Data types of the workers. */
 
+	/* Public function prototypes to work with the workers pool. */
 	workers *workers_create(number);
 	void workers_addtask(workers*,void(*)(void*),void*);
 	void workers_waitall(workers*);
 	void workers_finish(workers*);
+	number workers_number(workers*);
+
+	/* Public function prototypes to work with the workers mutex. */
+	workers_mutex *workers_mutex_create();
+	void workers_mutex_delete(workers_mutex*);
+	void workers_mutex_lock(workers_mutex*);
+	void workers_mutex_unlock(workers_mutex*);
 
 #endif
